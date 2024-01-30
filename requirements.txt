@@ -5,7 +5,7 @@
 click==7.1.2
 Flask==2.0.2
 itsdangerous==2.0.1
-Jinja==3.0.0
+Jinja
 MarkupSafe==2.0.0rc2
 Werkzeug==2.0.0
 gunicorn

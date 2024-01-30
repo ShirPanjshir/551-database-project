@@ -6,8 +6,8 @@ click==7.1.2
 Flask==2.0.2
 itsdangerous==2.0.1
 Jinja
-MarkupSafe==2.0.0rc2
-Werkzeug==2.0.0
+#MarkupSafe==2.0.0rc2
+#Werkzeug==2.0.0
 gunicorn
 
 # flask packages

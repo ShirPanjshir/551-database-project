@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>DSCI 551 Project by Brian, Dan, & Kyle</title> <!-- This displays on the browser tab-->
+    <!-- these tags allow us to use bootstrap formatting-->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        h1 {font-size: 40px; font-family: arial; color: rgb(169,54,54); text-align: center}
+        h2 {font-size: 20px; font-family: arial}
+        h3 {color: rgb(200, 60, 60);}
+        button {font-weight: bold; font-family: arial}
+        #database {max-width: 720px; margin-left: 0px}
+        #CRUD {}
+        #python {max-width: 320px; margin: 0 auto 0 auto;}
+        #crimes {margin-bottom: 16px}
+
+    </style>
+    <!-- {margin: 0 auto 0 auto;}-->
+    <!-- {display: block; margin-left: auto; margin-right: auto; width: 50%;}-->
+</head>
+<body>
+<h1>DSCI 551 Distributed Database by B. Meeler, D. Lee, and K.W. Parker</h1>
+<div id="python">
+<img src="http://127.0.0.1:5000/static/usc_data_science.jpeg" height="320" width="320">
+    </div>
+<div id="database">
+<h2> Search the Database!</h2>
+<button>Let's Get It</button>
+</div>
+<div id="crimes">
+    {% for crime in crimes %}
+        {% include 'crimeitem.html' %}
+    {% endfor %}
+    <!-- double curlies import variable content from .py file, as defined in the render_template command -->
+</div>
+<div id="CRUD">
+<h2> Database Updates *** Admins Only</h2>
+<button> CRUD</button>
+</div>
+<h2>******** SQL Team 6********</h2>
+    <p> Brian Meeler - (bio)</p>
+    <p> Dan Lee - (bio)</p>
+    <p> Kyle Wayne Parker - COWBOY</p>
+    <img src="http://127.0.0.1:5000/static/coffeekylewebv.jpg" height="60" width="60"
+</body>
+</html>

@@ -1,0 +1,15 @@
+<div class="border-bottom row" style="padding-bottom: 6px;">
+    <div class="col-9">
+    <h3><b>Offense:</b> {{crime['offense']}}</h3>
+    <div><b>Location:</b> {{crime['location']}}</div>
+    <div><b>Date:</b> {{crime['date']}}</div>
+    {% if 'case' in crime %}
+    <div><b>Case #:</b> {{crime['case']}}</div>
+    {% endif %}
+        </div>
+    <div class="col-3">
+    <button type="button" class="btn btn-outline-primary" style="float: right;">Investigate</button>
+        <!-- can add 'style="float: right;' if not using bootstrap to right align the button -->
+        </div>
+    <div style="clear: both;"></div>
+    </div>

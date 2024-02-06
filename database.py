@@ -24,11 +24,12 @@ def batch_process_pdf(batch):
     report_crime() function"""
 
 
-def report_crime_string(crime):
+def report_crime(crime):
     """This should be the function that allows a DBA to manually upload a new crime to the db. It can also be used
     in a loop to process an inputted batch. The input should be structured as a string version of a JSON with all
     standard parameters complete. The "event" from the pdf should be extracted and used as the primary key"""
     crime_record = json.loads(crime)
+    del crime_record['SUBMIT']
     primary_key = crime_record.get("event")
     try:
         if crime_record.get("case") > 1:
@@ -46,6 +47,7 @@ def report_crime_json(crime):
     """This should be the function that allows a DBA to manually upload a new crime to the db. It can also be used
     in a loop to process an inputted batch. The input should be structured as a string version of a JSON with all
     standard parameters complete. The "event" from the pdf should be extracted and used as the primary key"""
+    #need to convert case, date, and event from string to int, this will allow for simpler queries!!!!
     crime_record = json.load(crime)
     primary_key = crime_record.get("event")
     try:
@@ -57,6 +59,7 @@ def report_crime_json(crime):
     response = requests.put(url, json=crime_record)
     status_code = response.status_code
     return status_code, print(f'Crime {primary_key} submitted to database!')
+
 
 def search_event(event):
     event_match = {}
@@ -79,4 +82,5 @@ def search_location(location):
     location_matches = {}
     return location_matches
 
-print(search_event(123477))
+
+print(search_event(8675308))

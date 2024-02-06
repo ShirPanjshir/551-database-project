@@ -2,7 +2,7 @@ from flask import Flask
 from flask import render_template
 from flask import jsonify
 from flask import request
-from database import report_crime_json
+from database import report_crime
 from database import search_event
 from database import search_location
 import json
@@ -21,7 +21,7 @@ crimes = [{"date": 112923, "event": 340790, "case": 2306474, "offense": "assault
 
 
 @app.route("/")
-def hello_world():
+def landing_site():
     return render_template('home.html', crimes=crimes)
 
 @app.route("/crime/<location>")
@@ -38,17 +38,39 @@ def show_crime_data(id):
     return jsonify(crime_info)
 
 
+@app.route("/search")
+def search_index():
+    return render_template('search.html', results='')
+
+
+@app.route('/results')
+def results_index():
+    query = request.args.get('query')
+    print(query)
+    crime_match = search_event(query)
+    return render_template('search.html', results=crime_match)
+
+
 @app.route("/reportacrime")
 def crime_report_page():
     return render_template('reportacrime.html')
 
 
-@app.route("/crime/inputs/<id>")  #not working yet!!!!!
+@app.route("/crime/inputs/<id>")  # uploads data from site to proper database
 def report_a_crime(id):
     data = request.args
-    crime_json = data.json()
-    report_crime_json(crime_json)
+    crime_string = json.dumps(data)
+    report_crime(crime_string)
     return render_template('crimes_submitted.html', crimes=data)
+
+# @app.route("/crime/report/<id>")   # returns matching data from database to site
+# def report_results(id):
+#     data = request.args
+#     print(data)
+#     # crime_data = json.dumps(data)
+#     crime_event_number = data.get('event')
+#     found_event = search_event(crime_event)
+#     return render_template('databasereport.html', crimes=found_event)
 
 
 if __name__ == "__main__":

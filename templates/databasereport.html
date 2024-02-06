@@ -2,14 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Submitted Crimes</title>
+    <title>Matching Reports from Database</title>
     <style>
         p {text-align: center}
     </style>
 </head>
-<button onclick="window.location.href='http://127.0.0.1:5000/';">HOME </button>
-<body style="background-color:#FF0000">
-    <p><b>Your Crime {{crimes['event']}} has been submitted!</b></p>
+<body style="background-color:#CC0099">
+{% if crimes['event'] %}
+    <p><b>Your Crime {{crimes['event']}} has been found!</b></p>
     <h4>Crime Event</h4>
     <div>{{crimes['event']}}</div>
 
@@ -27,7 +27,8 @@
 
     <h4>Location</h4>
     <div>{{crimes['location']}}</div>
-
-
+{% else %}
+    <p> No event data available</p>
+{% endif %}
 </body>
 </html>

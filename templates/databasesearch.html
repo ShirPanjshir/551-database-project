@@ -2,19 +2,20 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Report a Crime</title>
-<h1>REPORT A CRIME</h1>
+    <title>SEARCH THE DATABASE</title>
 </head>
 <body>
-<form action="/crime/inputs/<id>">
+
+<h1>Search the Crime Database by entering a term into one of the boxes below to return associated reports</h1>
+    <form action="/crime/report/<id>">
     <label>Event Number</label>
-    <input type="number" name="event" placeholder="Do Not Include Dashes!">
+    <input type="text" name="event" placeholder="12-34-56-789012">
     <br>
     <label>Date Reported</label>
-    <input type="number" name="date" placeholder="MMDDYYYY with no dashes or spaces">
+    <input type="text" name="date" placeholder="MM/DD/YYYY">
 <br>
     <label>Case Number</label>
-    <input type="number" name="case" placeholder="234567">
+    <input type="text" name="case" placeholder="234567">
 <br>
     <label>Offense</label>
     <input type="text" name="offense" placeholder="CRIME REPORTED">
@@ -29,4 +30,5 @@
 
 </form>
 </body>
+
 </html>

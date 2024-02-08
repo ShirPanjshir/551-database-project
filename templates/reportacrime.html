@@ -3,9 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <title>Report a Crime</title>
+    <button onclick="window.location.href='http://127.0.0.1:5000/';">HOME </button>
+
+{% if password != 'PLEASE' %}
+<h1>Admins Only! Enter the Password:</h1>
+<style>
+    body {background-color: #f10837}
+</style>
+{% endif %}
+
+{% if password == 'PLEASE' %}
 <h1>REPORT A CRIME</h1>
+    <style>
+    body {background-color: #89d0f1}
+</style>
+{% endif %}
 </head>
 <body>
+{% if password != 'PLEASE' %}
+<form action="/reportacrimeadmin" method="GET">
+        <input type="text" name="password" placeholder="What's the password?">
+        <button type="submit">Search</button>
+    </form>
+{% endif %}
+{% if password == 'PLEASE' %}
 <form action="/crime/inputs/<id>">
     <label>Event Number</label>
     <input type="number" name="event" placeholder="Do Not Include Dashes!">
@@ -28,5 +49,8 @@
     <input type="submit" name="SUBMIT">
 
 </form>
+{% else %}
+<p> What's the magic word???.</p>
+{% endif %}
 </body>
 </html>

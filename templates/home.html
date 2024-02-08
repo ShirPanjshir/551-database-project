@@ -16,9 +16,9 @@
         h2 {font-size: 20px; font-family: arial}
         h3 {color: rgb(200, 60, 60);}
         button {font-weight: bold; font-family: arial}
-        #database {max-width: 720px; margin-left: 0px}
-        #CRUD {}
-        #python {max-width: 320px; margin: 0 auto 0 auto;}
+        #database {max-width: 200px; margin-left: 0px; border:1px solid black; text-align: center;}
+        #CRUD {max-width: 200px; border:1px solid black; text-align: center;}
+<!--        #python {max-width: 320px; margin: 0 auto 0 auto;}-->
         #crimes {margin-bottom: 16px}
         table, th, td {border: 1px solid black;}
 
@@ -28,10 +28,10 @@
 </head>
 
 <body>
-{% include 'nav.html'%}
+<!--{% include 'nav.html'%}-->
 
 <h1>DSCI 551 Distributed Database by B. Meeler, D. Lee, and K.W. Parker</h1>
-<div id="python">
+<div style="max-width: 320px; float: right; width: 40%;">
 <img src="http://127.0.0.1:5000/static/usc_data_science.jpeg" height="320" width="320">
     </div>
 <div id="database">
@@ -40,42 +40,11 @@
 </div>
 <br>
 <br>
-<h2>Current Database Entries</h2>
-<table style="width:50%">
-    <thead style="font-size:18px;">
-    <tr>
-        <th style="width:10%">Event</th>
-        <th style="width:10%">Date</th>
-        <th style="width:10%">Case</th>
-        <th style="width:20%">Offense</th>
-        <th style="width:30%">Location</th>
-        <th style="width:20%">Disposition</th>
-    </tr>
-    </thead>
-    <tbody>
-    {% for crime in crimes %}
-    <tr>
-        <td>{{ crime['event'] }}</td>
-        <td>{{ crime['date'] }}</td>
-        <td>{{ crime['case'] }}</td>
-        <td>{{ crime['offense'] }}</td>
-        <td>{{ crime['location'] }}</td>
-        <td>{{ crime['disposition'] }}</td>
-    </tr>
-    {% endfor %}
-    </tbody>
-</table>
-
-<!--<div id="crimes">-->
-<!--    {% for crime in crimes %}-->
-<!--        {% include 'crimeitem.html' %}-->
-<!--    {% endfor %}-->
-<!--    &lt;!&ndash; double curlies import variable content from .py file, as defined in the render_template command &ndash;&gt;-->
-<!--</div>-->
 <div id="CRUD">
     <br>
     <br>
 <h2> Database Updates *** Admins Only</h2>
+    <br>
 <button onclick="window.location.href='http://127.0.0.1:5000/reportacrime';"> Report a Crime!</button>
 
 </div>
@@ -83,6 +52,8 @@
     <p> Brian Meeler - (bio)</p>
     <p> Dan Lee - (bio)</p>
     <p> Kyle Wayne Parker - COWBOY</p>
+<a href="https://www.linkedin.com/in/kwayneparker/">
     <img src="http://127.0.0.1:5000/static/coffeekylewebv.jpg" height="60" width="60"/>
+</a>
 </body>
 </html>

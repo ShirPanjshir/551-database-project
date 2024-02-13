@@ -2,13 +2,20 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        #form-container {display: table; width: 100%;}
+        .form-row {display: table-row;}
+        .form-cell {display: table-cell; padding: 10px;}
+        label {font-weight: bold;}
+    </style>
     <title>Report a Crime</title>
     <button onclick="window.location.href='http://127.0.0.1:5000/';">HOME </button>
 
 {% if password != 'PLEASE' %}
 <h1>Admins Only! Enter the Password:</h1>
 <style>
-    body {background-color: #f10837}
+    body {background-color: #f10000}
 </style>
 {% endif %}
 
@@ -27,27 +34,107 @@
     </form>
 {% endif %}
 {% if password == 'PLEASE' %}
-<form action="/crime/inputs/<id>">
-    <label>Event Number</label>
-    <input type="number" name="event" placeholder="Do Not Include Dashes!">
+<div id="form-container">
+    <form action="/crime/inputs/<id>">
+        <div class="form-row">
+            <div class="form-cell">
+                <label for="Event">Event</label>
+                    <input type="text" name="Event" placeholder="NN-NN-NN-NNNNNN">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-cell">
+                <label for="CaseID">CaseID</label>
+                    <input type="text" name="CaseID" placeholder="seven digit integer">
+            </div>
+        </div>
     <br>
-    <label>Date Reported</label>
-    <input type="number" name="date" placeholder="MMDDYYYY with no dashes or spaces">
-<br>
-    <label>Case Number</label>
-    <input type="number" name="case" placeholder="234567">
-<br>
-    <label>Offense</label>
-    <input type="text" name="offense" placeholder="CRIME REPORTED">
-<br>
-    <label>Disposition</label>
-    <input type="text" name="disposition" placeholder="OPEN/CLOSED">
-<br>
-    <label>Location</label>
-    <input type="text" name="location" placeholder="1000 Block of Watt Way">
-
-    <input type="submit" name="SUBMIT">
-
+        <div class="form-row">
+            <div class="form-cell">
+                <label for="Date_From">Date_From</label>
+                    <input type="text" name="Date_From" placeholder="YYYY-MM-DD HH:MM with string quotes">
+                </div>
+        </div>
+    <br>
+        <div class="form-row">
+            <div class="form-cell">
+                <label for="Date_Reported">Date_Reported</label>
+                    <input type="text" name="Date_Reported" placeholder="YYYY-MM-DD HH:MM with string quotes">
+            </div>
+        </div>
+    <br>
+        <div class="form-row">
+            <div class="form-cell">
+                <label for="Date_To">Date_To</label>
+                    <input type="text" name="Date_To" placeholder="YYYY-MM-DD HH:MM with string quotes">
+                </div>
+        </div>
+    <br>
+        <div class="form-row">
+            <div class="form-cell">
+                <label for="Disposition">Disposition</label>
+                    <input type="text" name="Disposition" placeholder="STRING">
+                </div>
+        </div>
+    <br>
+        <div class="form-row">
+            <div class="form-cell">
+                <label for="Final_Incident_Category">Final_Incident_Category</label>
+                    <input type="text" name="Final_Incident_Category" placeholder="STRING">
+            </div>
+        </div>
+    <br>
+        <div class="form-row">
+            <div class="form-cell">
+                <label for="Final_Incident_Description">Final_Incident_Description</label>
+                    <input type="text" name="Final_Incident_Description" placeholder="STRING">
+                </div>
+        </div>
+    <br>
+        <div class="form-row">
+            <div class="form-cell">
+                <label for="Initial_Incident_Category">Initial_Incident_Category</label>
+                    <input type="text" name="Initial_Incident_Category" placeholder="STRING">
+                </div>
+        </div>
+    <br>
+        <div class="form-row">
+            <div class="form-cell">
+                <label for="Initial_Incident_Description">Initial_Incident_Description</label>
+                    <input type="text" name="Initial_Incident_Description" placeholder="STRING">
+                </div>
+        </div>
+    <br>
+        <div class="form-row">
+            <div class="form-cell">
+                <label for="Location">Location</label>
+                    <input type="text" name="Location" placeholder="STRING">
+                </div>
+        </div>
+    <br>
+        <div class="form-row">
+            <div class="form-cell">
+                <label for="Location_Type">Location_Type</label>
+                    <input type="text" name="Location_Type" placeholder="STRING">
+                </div>
+        </div>
+    <br>
+        <div class="form-row">
+            <div class="form-cell">
+                <label for="Offense_Category">Offense_Category</label>
+                    <input type="text" name="Offense_Category" placeholder="STRING">
+                </div>
+        </div>
+    <br>
+        <div class="form-row">
+            <div class="form-cell">
+                <label for="Offense_Description">Offense_Description</label>
+                    <input type="text" name="Offense_Description" placeholder="STRING">
+                </div>
+        </div>
+    <br>
+<input type="submit" name="SUBMIT">
 </form>
 {% else %}
 <p> What's the magic word???.</p>

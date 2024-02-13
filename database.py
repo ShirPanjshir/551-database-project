@@ -30,7 +30,7 @@ def report_crime(crime):
     standard parameters complete. The "event" from the pdf should be extracted and used as the primary key"""
     crime_record = json.loads(crime)
     del crime_record['SUBMIT']
-    primary_key = crime_record.get("event")
+    primary_key = crime_record.get("Event")
     try:
         if crime_record.get("case") > 1:
             url = database_urls.get(1)
@@ -64,23 +64,65 @@ def report_crime_json(crime):
 def search_event(event):
     event_match = {}
     db1_url = database_urls.get(0)
-    db1_url = f'{db1_url}/crimes.json?orderBy=\"event\"&equalTo={event}'
+    db1_url = f'{db1_url}/crimes.json?orderBy="$key"&equalTo="{event}"'
     db1_response = requests.get(db1_url)
     db1_data = db1_response.json()
     db2_url = database_urls.get(1)  # parameter logic
-    db2_url = f'{db2_url}/crimes.json?orderBy=\"event\"&equalTo={event}'
+    db2_url = f'{db2_url}/crimes.json?orderBy="$key"&equalTo="{event}"'  #{db2_url}/crimes.json?orderBy=\"event\"&equalTo={event}
     db2_response = requests.get(db2_url)
     db2_data = db2_response.json()
     event_match.update(db1_data)
     event_match.update(db2_data)
     return event_match
 
-# this works, tested 2feb24 by kwp
+
+# this works, tested 12feb, must quote out the numbers with dashes or will return error
+
 
 def search_location(location):
     """This will search the databases for events that match on location"""
     location_matches = {}
+    db1_url = database_urls.get(0)
+    db1_url = f'{db1_url}/crimes.json?orderBy=\"Location\"&equalTo=\"{location}\"'
+    db1_response = requests.get(db1_url)
+    print(db1_response)
+    db1_data = db1_response.json()
+    print(db1_data)
+    db2_url = database_urls.get(1)  # parameter logic
+    db2_url = f'{db2_url}/crimes.json?orderBy=\"Location\"&equalTo=\"{location}\"'
+    db2_response = requests.get(db2_url)
+    print(db2_response)
+    db2_data = db2_response.json()
+    print(db2_data)
+    location_matches.update(db1_data)
+    location_matches.update(db2_data)
     return location_matches
+# {'error': 'Constraint index field must be a JSON primitive'}   or {}
+
+def search_case_id(case_id):
+    case_match = {}
+    db1_url = database_urls.get(0)
+    db1_url = f'{db1_url}/crimes.json?orderBy=\"CaseID\"&equalTo={case_id}'
+    db1_response = requests.get(db1_url)
+    db1_data = db1_response.json()
+    db2_url = database_urls.get(1)  # parameter logic
+    db2_url = f'{db2_url}/crimes.json?orderBy=\"CaseID\"&equalTo={case_id}'
+    db2_response = requests.get(db2_url)
+    db2_data = db2_response.json()
+    case_match.update(db1_data)
+    case_match.update(db2_data)
+    return case_match
+# works 12FEB24
 
 
-print(search_event(8675308))
+print(search_location("3100 Block Of FIGUEROA ST"))
+
+# print(search_case_id('2306606'))
+
+# print(search_event('301215888777'))
+#
+# print(search_event('24-02-06-041188'))
+
+# print(search_event('24-02-05-039645'))
+#
+# print(search_event('24-02-04-037848'))

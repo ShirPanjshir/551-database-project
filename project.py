@@ -5,6 +5,7 @@ from flask import request
 from database import report_crime
 from database import search_event
 from database import search_location
+from database import search_case_id
 import json
 
 app = Flask(__name__)
@@ -48,7 +49,13 @@ def results_index():
     query = request.args.get('query')  # this pulls the query value
     category = request.args.get('category')  # this pulls the selected category and can feed into logic for querying
     print(category)
-    crime_match = search_event(query)
+    print(query)
+    if category == 'event':
+        crime_match = search_event(query)
+        print(crime_match)
+    elif category == 'case':
+        crime_match = search_case_id(query)
+        print(crime_match)
     return render_template('search.html', results=crime_match)
 
 
@@ -70,7 +77,7 @@ def report_a_crime(id):
     data = request.args
     crime_string = json.dumps(data)
     report_crime(crime_string)
-    return render_template('crimes_submitted.html', crimes=data)
+    return render_template('crimes_submitted.html', crimes=data)  #UPDATE REQUIRED on c_s.html
 
 # @app.route("/crime/report/<id>")   # returns matching data from database to site
 # def report_results(id):

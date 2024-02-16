@@ -6,6 +6,7 @@ from database import report_crime
 from database import search_event
 from database import search_location
 from database import search_case_id
+from database import search
 import json
 
 app = Flask(__name__)
@@ -43,12 +44,6 @@ crimes = [{"date": 112923, "event": 340790, "case": 2306474, "offense": "assault
 def landing_site():
     return render_template('home.html', crimes=crimes)
 
-@app.route("/crime/<location>")    # delete - nest all searches into /search route with results_index() func
-def list_crimes(location):
-    """should a call function from database.py that lists all crimes matching that location"""
-    crime_locations = search_location(location) # not built yet
-    return jsonify(crime_locations)
-
 
 @app.route("/crime/<id>")
 def show_crime_data(id):
@@ -66,20 +61,41 @@ def search_index():
 def results_index():
     query = request.args.get('query')  # this pulls the query value
     category = request.args.get('category')  # this pulls the selected category and can feed into logic for querying
-    print(category)
-    print(query)
-    if category == 'event':
-        crime_match = search_event(query)
-        print(crime_match)
-    elif category == 'case':
+    event = request.args.get('Event')
+    date_from = request.args.get('Date_From')
+    date_reported = request.args.get('Date_Reported')
+    date_to = request.args.get('Date_To')
+    disposition = request.args.get('Disposition')
+    final_incident_category = request.args.get('Final_Incident_Category')
+    final_incident_description = request.args.get('Final_Incident_Description')
+    initial_incident_category = request.args.get('Initial_Incident_Category')
+    initial_incident_description = request.args.get('Initial_Incident_Description')
+    location = request.args.get('Location')
+    location_type = request.args.get('Location_Type')
+    offense_category = request.args.get('Offense_Category')
+    offense_description = request.args.get('Offense_Description')
+    print(date_from)
+    if query:
         crime_match = search_case_id(query)
         print(crime_match)
-    return render_template('search.html', results=crime_match)
+    elif location:
+        crime_match = search_location(location)
+        print(crime_match)
+    elif event:
+        crime_match = search_event(event)
+        print(crime_match)
+    else:
+        crime_match = search(date_from, date_to, date_reported, offense_category, offense_description,
+                             initial_incident_category, initial_incident_description, final_incident_category,
+                             final_incident_description, location_type, location, disposition)
+    number_found = len(crime_match)
+    return render_template('search.html', results=crime_match, number_found=number_found)
 
 
 @app.route("/reportacrime")
 def crime_report_page():
     return render_template('reportacrime.html', password='')
+
 
 @app.route('/reportacrimeadmin')
 def crime_report_page_admin():
@@ -90,21 +106,14 @@ def crime_report_page_admin():
     else:
         return render_template('magicword.html')
 
+
 @app.route("/crime/inputs/<id>")  # uploads data from site to proper database
 def report_a_crime(id):
     data = request.args
+    event_number = data['Event']
     crime_string = json.dumps(data)
     report_crime(crime_string)
-    return render_template('crimes_submitted.html', crimes=data)  #UPDATE REQUIRED on c_s.html
-
-# @app.route("/crime/report/<id>")   # returns matching data from database to site
-# def report_results(id):
-#     data = request.argsHow
-#     print(data)
-#     # crime_data = json.dumps(data)
-#     crime_event_number = data.get('event')
-#     found_event = search_event(crime_event)
-#     return render_template('databasereport.html', crimes=found_event)
+    return render_template('crimes_submitted.html', crimes=event_number)  #UPDATE REQUIRED on c_s.html
 
 
 if __name__ == "__main__":

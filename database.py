@@ -27,7 +27,7 @@ crime_strings = ['{"date": 123563, "event": 123456, "offense": "bad stuff"}', '{
                                                                               '"offense": "really bad stuff"}']
 
 
-def batch_process_pdf(pdf_path):
+def batch_process_pdf(pdf_path):   # maybe keep this as a command line function for now
     page = len(PyPDF2.PdfReader(pdf_path).pages)
     pdf = []
     error = []
@@ -205,8 +205,8 @@ def search_by_id(caseid):
     return json.loads(r.text)
 
 
-def search(start_dt=None, end_dt=None, off_cat=None, off_des=None, ii_cat=None,
-           ii_des=None, fi_cat=None, fi_des=None, loc_type=None, loc=None, disp=None):
+def search(start_dt=None, end_dt=None, date_rep=None, off_cat=None, off_des=None, ii_cat=None,
+           ii_des=None, fi_cat=None, fi_des=None, loc_type=None, loc=None, disp=None):  #added date_rep param
     '''
     Please check datatypes before passing values into this function
     start_dt, end_dt -> str "YY-MM-DD" 
@@ -216,25 +216,37 @@ def search(start_dt=None, end_dt=None, off_cat=None, off_des=None, ii_cat=None,
     off_des, ii_des, fi_des = str
     '''
     # Pick one filter and download data
-    if start_dt or end_dt:
+    if start_dt or end_dt:  # Date From or Date To
         r0 = requests.get(db[0], params={'orderBy': '"$key"', 'startAt': f'"{start_dt}"', 'endAt': f'"{end_dt}"'})
         r1 = requests.get(db[1], params={'orderBy': '"$key"', 'startAt': f'"{start_dt}"', 'endAt': f'"{end_dt}"'})
-    elif off_cat:
+    elif date_rep:  # Date Reported
+        r0 = requests.get(db[0], params={'orderBy': '"$key"', 'equalTo': f'"{date_rep}"'})
+        r1 = requests.get(db[1], params={'orderBy': '"$key"', 'equalTo': f'"{date_rep}"'})
+    elif off_cat:  # Offense Category
         r0 = requests.get(db[0], params={'orderBy': '"Offense_Category"', 'equalTo': f'"{off_cat}"'})
         r1 = requests.get(db[1], params={'orderBy': '"Offense_Category"', 'equalTo': f'"{off_cat}"'})
-    elif ii_cat:
+    elif off_des:  # Offense Description
+        r0 = requests.get(db[0], params={'orderBy': '"Offense_Description"', 'equalTo': f'"{off_des}"'})
+        r1 = requests.get(db[1], params={'orderBy': '"Offense_Description"', 'equalTo': f'"{off_des}"'})
+    elif ii_cat:  # Initial Incident Category
         r0 = requests.get(db[0], params={'orderBy': '"Initial_Incident_Category"', 'equalTo': f'"{ii_cat}"'})
         r1 = requests.get(db[1], params={'orderBy': '"Initial_Incident_Category"', 'equalTo': f'"{ii_cat}"'})
-    elif fi_cat:
+    elif ii_des:  # Initial Incident Description
+        r0 = requests.get(db[0], params={'orderBy': '"Initial_Incident_Description"', 'equalTo': f'"{ii_des}"'})
+        r1 = requests.get(db[1], params={'orderBy': '"Initial_Incident_Description"', 'equalTo': f'"{ii_des}"'})
+    elif fi_cat:  # Final Incident Category
         r0 = requests.get(db[0], params={'orderBy': '"Final_Incident_Category"', 'equalTo': f'"{fi_cat}"'})
         r1 = requests.get(db[1], params={'orderBy': '"Final_Incident_Category"', 'equalTo': f'"{fi_cat}"'})
-    elif loc_type:
+    elif fi_des:  # Final Incident Description
+        r0 = requests.get(db[0], params={'orderBy': '"Final_Incident_Description"', 'equalTo': f'"{fi_des}"'})
+        r1 = requests.get(db[1], params={'orderBy': '"Final_Incident_Description"', 'equalTo': f'"{fi_des}"'})
+    elif loc_type:  # Location Type
         r0 = requests.get(db[0], params={'orderBy': '"Location_Type"', 'equalTo': f'"{loc_type}"'})
         r1 = requests.get(db[1], params={'orderBy': '"Location_Type"', 'equalTo': f'"{loc_type}"'})
-    elif disp:
+    elif disp:  # Disposition
         r0 = requests.get(db[0], params={'orderBy': '"Disposition"', 'equalTo': f'"{disp}"'})
         r1 = requests.get(db[1], params={'orderBy': '"Disposition"', 'equalTo': f'"{disp}"'})
-    else:
+    else:    #why pull whole db if no search terms!?!??!
         r0 = requests.get(db[0])
         r1 = requests.get(db[1])
 
@@ -242,30 +254,31 @@ def search(start_dt=None, end_dt=None, off_cat=None, off_des=None, ii_cat=None,
     data = json.loads(r0.text)
     data.update(json.loads(r1.text))
     df = pd.DataFrame.from_dict(data, orient='index').sort_index()
-
+    print(df)
     # Categorical filters
-    if off_cat:
-        df = df[df.Offense_Category == off_cat]
-    if ii_cat:
-        df = df[df.Initial_Incident_Category == ii_cat]
-    if fi_cat:
-        df = df[df.Final_Incident_Category == fi_cat]
-    if loc_type:
-        df = df[df.Location_Type == loc_type]
-    if disp:
-        df = df[df.Disposition == disp]
+    # if off_cat:
+    #     df = df[df.Offense_Category == off_cat]
+    # if ii_cat:
+    #     df = df[df.Initial_Incident_Category == ii_cat]
+    # if fi_cat:
+    #     df = df[df.Final_Incident_Category == fi_cat]
+    # if loc_type:
+    #     df = df[df.Location_Type == loc_type]
+    # if disp:
+    #     df = df[df.Disposition == disp]
 
-    # case insentitive partial match
-    if off_des:
-        df = df[df.Offense_Description.str.lower().str.contains(off_des.lower())]
-    if ii_des:
-        df = df[df.Initial_Incident_Description.str.lower().str.contains(ii_des.lower())]
-    if fi_des:
-        df = df[df.Final_Incident_Description.str.lower().str.contains(fi_des.lower())]
-    if loc:
-        df = df[df.Location.str.lower().str.contains(loc.lower())]
-    # use df.to_json(orient="index") or df.to_dict(orient="index") to convert to json string / dict
-    return df
+    # case-insensitive partial match
+    # if off_des:
+    #     df = df[df.Offense_Description.str.lower().str.contains(off_des.lower(), na=False)]
+    # if ii_des:
+    #     df = df[df.Initial_Incident_Description.str.lower().str.contains(ii_des.lower(), na=False)]
+    # if fi_des:
+    #     df = df[df.Final_Incident_Description.str.lower().str.contains(fi_des.lower(), na=False)]
+    # if loc:
+    #     df = df[df.Location.str.lower().str.contains(loc.lower(), na=False)]
+    # # use df.to_json(orient="index") or df.to_dict(orient="index") to convert to json string / dict
+    # df = df.to_dict(orient="index")
+    return data
 
 
 def search_location(location):
@@ -286,7 +299,7 @@ def search_location(location):
     location_matches.update(db1_data)
     location_matches.update(db2_data)
     return location_matches
-# {'error': 'Constraint index field must be a JSON primitive'}   or {}
+    # works
 
 
 def search_case_id(case_id):
@@ -303,16 +316,3 @@ def search_case_id(case_id):
     case_match.update(db2_data)
     return case_match
 # works 12FEB24
-
-
-print(search_location("3100 Block Of FIGUEROA ST"))
-
-# print(search_case_id('2306606'))
-
-# print(search_event('301215888777'))
-#
-# print(search_event('24-02-06-041188'))
-
-# print(search_event('24-02-05-039645'))
-#
-# print(search_event('24-02-04-037848'))

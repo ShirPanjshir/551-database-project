@@ -131,6 +131,36 @@ def report_crime(crime):
 
 # this works, tested 2feb24 by kwp
 
+
+def report_case(caseid=False, dt_from=None, dt_to=None, off_cat=None, off_des=None, disp=None,
+                ii_cat=None, ii_des=None, fi_cat=None, fi_des=None, loc_type=None, loc=None):
+    '''
+    dt_from and df_to must be pd.Timestamps!!!
+    '''
+    url = db[0]
+    data = {'Disposition': disp, 'Final_Incident_Category': fi_cat, 'Final_Incident_Description': fi_des,
+            'Initial_Incident_Category': ii_cat,'Initial_Incident_Description': ii_des,
+            'Location': loc, 'Location_Type': loc_type, 'Offense_Category': off_cat, 'Offense_Description': off_des}
+    if caseid:
+        url = db[1]
+        r = requests.get(f'{db[1]}?orderBy="CaseID"&limitToLast=1')
+        data['CaseID'] = int(list(json.loads(r.text).values())[0]['CaseID']) + 1
+
+    time = pd.Timestamp.now(tz='US/Pacific')  
+    data['Date_Reported'] = time.strftime('%Y-%m-%d %H:%M')
+    eventID = f"{time.strftime('%y-%m-%d')}-{time.hour*3600 + time.minute*60 + time.second:06}" 
+
+    if dt_from:
+        data['Date_From'] = dt_from.strftime('%Y-%m-%d %H:%M')
+    if dt_to:
+        data['Date_To'] = dt_to.strftime('%Y-%m-%d %H:%M')
+    data = {k: v for k, v in data.items() if v is not None}
+    case = {eventID: data}
+    r = requests.patch(url, json=case)
+    # FYI the primary key is eventID (automatically generated based on time reported)
+    return r.status_code
+
+
 def report_crime_json(crime):
     """This should be the function that allows a DBA to manually upload a new crime to the db. It can also be used
     in a loop to process an inputted batch. The input should be structured as a string version of a JSON with all

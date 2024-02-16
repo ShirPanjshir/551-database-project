@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SEARCH THE DATABASE</title>
+</head>
+<body>
+
+<h1>Search the Crime Database by entering a term into one of the boxes below to return associated reports</h1>
+    <form action="/crime/report/<id>">
+    <label>Event Number</label>
+    <input type="text" name="event" placeholder="12-34-56-789012">
+    <br>
+    <label>Date Reported</label>
+    <input type="text" name="date" placeholder="MM/DD/YYYY">
+<br>
+    <label>Case Number</label>
+    <input type="text" name="case" placeholder="234567">
+<br>
+    <label>Offense</label>
+    <input type="text" name="offense" placeholder="CRIME REPORTED">
+<br>
+    <label>Disposition</label>
+    <input type="text" name="disposition" placeholder="OPEN/CLOSED">
+<br>
+    <label>Location</label>
+    <input type="text" name="location" placeholder="1000 Block of Watt Way">
+
+    <input type="submit" name="SUBMIT">
+
+</form>
+</body>
+
+</html>

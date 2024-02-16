@@ -10,26 +10,114 @@
 </head>
 <body>
 <button onclick="window.location.href='http://127.0.0.1:5000/';">HOME </button>
-    <h1>Search The Database</h1>
+    <h1>Search By Case Number</h1>
     <form action="/results" method="GET">
-        <select name="category">
-            <option value="" disabled selected>Select Search Category</option>
-            <option value="event">Event</option>
-            <option value="date">Date</option>
-            <option value="case">Case</option>
-            <option value="offense">Offense</option>
-            <option value="location">Location</option>
-            <option value="disposition">Disposition</option>
-        </select>
-        <input type="text" name="query" placeholder="Enter search terms">
+        <input type="text" name="query" placeholder='Enter "CaseID Number"'>
         <button type="submit">Search</button>
     </form>
 
 <br>
-<br>
-<div>
+
+<h1>Advanced Search</h1>
+<div id="form-container">
+    <form action="/results">
+        <div class="form-row">
+            <div class="form-cell">
+                <label for="Event">Event</label>
+                    <input type="text" name="Event" placeholder="NN-NN-NN-NNNNNN">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-cell">
+                <label for="Date_From">Date_From</label>
+                    <input type="text" name="Date_From" placeholder="YY-MM-DD">
+                </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-cell">
+                <label for="Date_Reported">Date_Reported</label>
+                    <input type="text" name="Date_Reported" placeholder="YY-MM-DD">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-cell">
+                <label for="Date_To">Date_To</label>
+                    <input type="text" name="Date_To" placeholder="YY-MM-DD">
+                </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-cell">
+                <label for="Disposition">Disposition</label>
+                    <input type="text" name="Disposition" placeholder="STRING">
+                </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-cell">
+                <label for="Final_Incident_Category">Final_Incident_Category</label>
+                    <input type="text" name="Final_Incident_Category" placeholder="STRING">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-cell">
+                <label for="Final_Incident_Description">Final_Incident_Description</label>
+                    <input type="text" name="Final_Incident_Description" placeholder="STRING">
+                </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-cell">
+                <label for="Initial_Incident_Category">Initial_Incident_Category</label>
+                    <input type="text" name="Initial_Incident_Category" placeholder="STRING">
+                </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-cell">
+                <label for="Initial_Incident_Description">Initial_Incident_Description</label>
+                    <input type="text" name="Initial_Incident_Description" placeholder="STRING">
+                </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-cell">
+                <label for="Location">Location</label>
+                    <input type="text" name="Location" placeholder="STRING">
+                </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-cell">
+                <label for="Location_Type">Location_Type</label>
+                    <input type="text" name="Location_Type" placeholder="STRING">
+                </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-cell">
+                <label for="Offense_Category">Offense_Category</label>
+                    <input type="text" name="Offense_Category" placeholder="STRING">
+                </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-cell">
+                <label for="Offense_Description">Offense_Description</label>
+                    <input type="text" name="Offense_Description" placeholder="STRING">
+                </div>
+        </div>
+    <br>
+        <button type="submit" name="Advanced Search">Advanced Search</button>
+</form>
+</div>
+    <br>
     {% if results %}
-<h2>Matching Database Entries</h2>
+<h2>Matching Database Entries: {{ number_found }}</h2>
 <table style="width:50%">
     <thead style="font-size:18px;">
     <tr>

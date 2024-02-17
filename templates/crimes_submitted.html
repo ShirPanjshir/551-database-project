@@ -4,12 +4,12 @@
     <meta charset="UTF-8">
     <title>Submitted Crimes</title>
     <style>
-        p {text-align: center}
+        p {text-align: center; font-size: 24px}
     </style>
 </head>
 <button onclick="window.location.href='http://127.0.0.1:5000/';">HOME </button>
 <body style="background-color:#FF0000">
-    <p><b>Your Crime {{crimes}} has been submitted!</b></p>
+    <p><b>The Crime {{crimes['CaseID']}} that occurred at {{crimes['Location']}} has been submitted!</b></p>
 <!--    <h4>Crime Event</h4>-->
 <!--    <div>{{crimes['event']}}</div>-->
 

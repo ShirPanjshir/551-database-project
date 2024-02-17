@@ -19,4 +19,4 @@ Current considerations:
   -drop down selections for categories/dispositions? categories makes sense, dispositions seems less categorical
   -UPDATE feature    (patch vs post vs put... current report crime has PUT and batch report has PATCH....)
   -DELETE feature.... should be an easy swap... rather than return matches, just delete them.
-  
+  -report_crime swap to report_case, delete manual event# input and adjust other parameters to ensure funcitonality

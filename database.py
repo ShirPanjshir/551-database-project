@@ -179,34 +179,8 @@ def report_crime_json(crime):
     return status_code, print(f'Crime {primary_key} submitted to database!')
 
 
-def search_event(event):
-    event_match = {}
-    db1_url = database_urls.get(0)
-    db1_url = f'{db1_url}/crimes.json?orderBy="$key"&equalTo="{event}"'
-    db1_response = requests.get(db1_url)
-    db1_data = db1_response.json()
-    db2_url = database_urls.get(1)  # parameter logic
-    db2_url = f'{db2_url}/crimes.json?orderBy="$key"&equalTo="{event}"'  #{db2_url}/crimes.json?orderBy=\"event\"&equalTo={event}
-    db2_response = requests.get(db2_url)
-    db2_data = db2_response.json()
-    event_match.update(db1_data)
-    event_match.update(db2_data)
-    return event_match
-
-
-# this works, tested 12feb, must quote out the numbers with dashes or will return error
-
-def search_by_id(caseid):
-    '''
-    caseid should be a  seven-digit nuemeric string
-    '''
-    r = requests.get(db[1], params={'orderBy': '"CaseID"', 'equalTo': f'"{caseid}"'})
-    # Use pd.DataFrame.from_dict(json.loads(r.text), orient='index').sort_index() to convert to df
-    return json.loads(r.text)
-
-
 def search(start_dt=None, end_dt=None, date_rep=None, off_cat=None, off_des=None, ii_cat=None,
-           ii_des=None, fi_cat=None, fi_des=None, loc_type=None, loc=None, disp=None):  #added date_rep param
+           ii_des=None, fi_cat=None, fi_des=None, loc_type=None, loc=None, disp=None):
     '''
     Please check datatypes before passing values into this function
     start_dt, end_dt -> str "YY-MM-DD" 
@@ -215,104 +189,80 @@ def search(start_dt=None, end_dt=None, date_rep=None, off_cat=None, off_des=None
     disp = str DISPOSITIONS in project.py
     off_des, ii_des, fi_des = str
     '''
+    if start_dt:
+        start_dt = pd.to_datetime(start_dt, format="%y-%m-%d").strftime("%Y-%m-%d")
+    if end_dt:
+        end_dt = (pd.to_datetime(end_dt, format="%y-%m-%d") + pd.Timedelta(days=1)).strftime("%Y-%m-%d")
     # Pick one filter and download data
-    if start_dt or end_dt:  # Date From or Date To
-        r0 = requests.get(db[0], params={'orderBy': '"$key"', 'startAt': f'"{start_dt}"', 'endAt': f'"{end_dt}"'})
-        r1 = requests.get(db[1], params={'orderBy': '"$key"', 'startAt': f'"{start_dt}"', 'endAt': f'"{end_dt}"'})
-    elif date_rep:  # Date Reported
-        r0 = requests.get(db[0], params={'orderBy': '"$key"', 'equalTo': f'"{date_rep}"'})
-        r1 = requests.get(db[1], params={'orderBy': '"$key"', 'equalTo': f'"{date_rep}"'})
-    elif off_cat:  # Offense Category
+    if date_rep:
+        date_rep = pd.to_datetime(date_rep, format="%y-%m-%d").strftime("%Y-%m-%d")
+        next = (pd.to_datetime(date_rep, format="%Y-%m-%d") + pd.Timedelta(days=1)).strftime("%Y-%m-%d")
+        r0 = requests.get(db[0], params={'orderBy': '"Date_Reported"', 'startAt': f'"{date_rep}"', 'endAt': f'"{next}"'})
+        r1 = requests.get(db[1], params={'orderBy': '"Date_Reported"', 'startAt': f'"{date_rep}"', 'endAt': f'"{next}"'})
+    elif start_dt:
+        r0 = requests.get(db[0], params={'orderBy': '"Date_From"', 'startAt': f'"{start_dt}"'})
+        r1 = requests.get(db[1], params={'orderBy': '"Date_From"', 'startAt': f'"{start_dt}"'})
+    elif end_dt:
+        r0 = requests.get(db[0], params={'orderBy': '"Date_To"', 'endAt': f'"{end_dt}"'})
+        r1 = requests.get(db[1], params={'orderBy': '"Date_To"', 'endAt': f'"{end_dt}"'})
+    elif off_cat:
         r0 = requests.get(db[0], params={'orderBy': '"Offense_Category"', 'equalTo': f'"{off_cat}"'})
         r1 = requests.get(db[1], params={'orderBy': '"Offense_Category"', 'equalTo': f'"{off_cat}"'})
-    elif off_des:  # Offense Description
-        r0 = requests.get(db[0], params={'orderBy': '"Offense_Description"', 'equalTo': f'"{off_des}"'})
-        r1 = requests.get(db[1], params={'orderBy': '"Offense_Description"', 'equalTo': f'"{off_des}"'})
-    elif ii_cat:  # Initial Incident Category
+    elif ii_cat:
         r0 = requests.get(db[0], params={'orderBy': '"Initial_Incident_Category"', 'equalTo': f'"{ii_cat}"'})
         r1 = requests.get(db[1], params={'orderBy': '"Initial_Incident_Category"', 'equalTo': f'"{ii_cat}"'})
-    elif ii_des:  # Initial Incident Description
-        r0 = requests.get(db[0], params={'orderBy': '"Initial_Incident_Description"', 'equalTo': f'"{ii_des}"'})
-        r1 = requests.get(db[1], params={'orderBy': '"Initial_Incident_Description"', 'equalTo': f'"{ii_des}"'})
-    elif fi_cat:  # Final Incident Category
+    elif fi_cat:
         r0 = requests.get(db[0], params={'orderBy': '"Final_Incident_Category"', 'equalTo': f'"{fi_cat}"'})
         r1 = requests.get(db[1], params={'orderBy': '"Final_Incident_Category"', 'equalTo': f'"{fi_cat}"'})
-    elif fi_des:  # Final Incident Description
-        r0 = requests.get(db[0], params={'orderBy': '"Final_Incident_Description"', 'equalTo': f'"{fi_des}"'})
-        r1 = requests.get(db[1], params={'orderBy': '"Final_Incident_Description"', 'equalTo': f'"{fi_des}"'})
-    elif loc_type:  # Location Type
+    elif loc_type:
         r0 = requests.get(db[0], params={'orderBy': '"Location_Type"', 'equalTo': f'"{loc_type}"'})
         r1 = requests.get(db[1], params={'orderBy': '"Location_Type"', 'equalTo': f'"{loc_type}"'})
-    elif disp:  # Disposition
+    elif disp:
         r0 = requests.get(db[0], params={'orderBy': '"Disposition"', 'equalTo': f'"{disp}"'})
         r1 = requests.get(db[1], params={'orderBy': '"Disposition"', 'equalTo': f'"{disp}"'})
-    else:    #why pull whole db if no search terms!?!??!
+    else:
         r0 = requests.get(db[0])
         r1 = requests.get(db[1])
 
     # Merge jsons into one df
-    data = json.loads(r0.text)
-    data.update(json.loads(r1.text))
+    data = r0.json()
+    data.update(r1.json())
     df = pd.DataFrame.from_dict(data, orient='index').sort_index()
-    print(df)
+    
+    if start_dt and ("Date_From" in df):
+        df = df[df.Date_From >= start_dt]
+    if end_dt and ("Date_To" in df):
+        df = df[df.Date_To <= end_dt]
     # Categorical filters
-    # if off_cat:
-    #     df = df[df.Offense_Category == off_cat]
-    # if ii_cat:
-    #     df = df[df.Initial_Incident_Category == ii_cat]
-    # if fi_cat:
-    #     df = df[df.Final_Incident_Category == fi_cat]
-    # if loc_type:
-    #     df = df[df.Location_Type == loc_type]
-    # if disp:
-    #     df = df[df.Disposition == disp]
+    if off_cat and ("Offense_Category" in df):
+        df = df[df.Offense_Category == off_cat]
+    if ii_cat and ("Initial_Incident_Category" in df):
+        df = df[df.Initial_Incident_Category == ii_cat]
+    if fi_cat and ("Final_Incident_Category" in df):
+        df = df[df.Final_Incident_Category == fi_cat]
+    if loc_type and ("Location_Type" in df):
+        df = df[df.Location_Type == loc_type]
+    if disp and ("Disposition" in df):
+        df = df[df.Disposition == disp]
 
-    # case-insensitive partial match
-    # if off_des:
-    #     df = df[df.Offense_Description.str.lower().str.contains(off_des.lower(), na=False)]
-    # if ii_des:
-    #     df = df[df.Initial_Incident_Description.str.lower().str.contains(ii_des.lower(), na=False)]
-    # if fi_des:
-    #     df = df[df.Final_Incident_Description.str.lower().str.contains(fi_des.lower(), na=False)]
-    # if loc:
-    #     df = df[df.Location.str.lower().str.contains(loc.lower(), na=False)]
-    # # use df.to_json(orient="index") or df.to_dict(orient="index") to convert to json string / dict
-    # df = df.to_dict(orient="index")
-    return data
-
-
-def search_location(location):
-    """This will search the databases for events that match on location"""
-    location_matches = {}
-    db1_url = database_urls.get(0)
-    db1_url = f'{db1_url}/crimes.json?orderBy=\"Location\"&equalTo=\"{location}\"'
-    db1_response = requests.get(db1_url)
-    print(db1_response)
-    db1_data = db1_response.json()
-    print(db1_data)
-    db2_url = database_urls.get(1)  # parameter logic
-    db2_url = f'{db2_url}/crimes.json?orderBy=\"Location\"&equalTo=\"{location}\"'
-    db2_response = requests.get(db2_url)
-    print(db2_response)
-    db2_data = db2_response.json()
-    print(db2_data)
-    location_matches.update(db1_data)
-    location_matches.update(db2_data)
-    return location_matches
-    # works
+    # case insentitive partial match
+    if off_des and ("Offense_Description" in df):
+        df = df[df.Offense_Description.str.lower().str.contains(off_des.lower()).fillna(False)]
+    if ii_des and ("Initial_Incident_Description" in df):
+        df = df[df.Initial_Incident_Description.str.lower().str.contains(ii_des.lower()).fillna(False)]
+    if fi_des and ("Final_Incident_Description" in df):
+        df = df[df.Final_Incident_Description.str.lower().str.contains(fi_des.lower()).fillna(False)]
+    if loc and ("Location" in df):
+        df = df[df.Location.str.lower().str.contains(loc.lower()).fillna(False)]
+    df = df.fillna('N/A')
+    return df.to_dict(orient='index')
 
 
 def search_case_id(case_id):
-    case_match = {}
-    db1_url = database_urls.get(0)
-    db1_url = f'{db1_url}/crimes.json?orderBy=\"CaseID\"&equalTo={case_id}'
-    db1_response = requests.get(db1_url)
-    db1_data = db1_response.json()
-    db2_url = database_urls.get(1)  # parameter logic
-    db2_url = f'{db2_url}/crimes.json?orderBy=\"CaseID\"&equalTo={case_id}'
-    db2_response = requests.get(db2_url)
-    db2_data = db2_response.json()
-    case_match.update(db1_data)
-    case_match.update(db2_data)
-    return case_match
-# works 12FEB24
+    return requests.get(db[1], params={'orderBy': '"CaseID"', 'equalTo': f'"{case_id}"'}).json()
+
+
+def search_event(event):
+    event_match = requests.get(f'{db[0]}?orderBy="$key"&equalTo="{event}"').json()
+    event_match.update(requests.get(f'{db[1]}?orderBy="$key"&equalTo="{event}"').json())
+    return event_match

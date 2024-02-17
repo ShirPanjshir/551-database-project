@@ -4,7 +4,6 @@ from flask import jsonify
 from flask import request
 from database import report_crime
 from database import search_event
-from database import search_location
 from database import search_case_id
 from database import search
 import json
@@ -77,9 +76,6 @@ def results_index():
     print(date_from)
     if query:
         crime_match = search_case_id(query)
-        print(crime_match)
-    elif location:
-        crime_match = search_location(location)
         print(crime_match)
     elif event:
         crime_match = search_event(event)

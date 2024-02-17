@@ -139,7 +139,7 @@ def report_case(caseid=False, dt_from=None, dt_to=None, off_cat=None, off_des=No
     '''
     url = db[0]
     data = {'Disposition': disp, 'Final_Incident_Category': fi_cat, 'Final_Incident_Description': fi_des,
-            'Initial_Incident_Category': ii_cat,'Initial_Incident_Description': ii_des,
+            'Initial_Incident_Category': ii_cat, 'Initial_Incident_Description': ii_des,
             'Location': loc, 'Location_Type': loc_type, 'Offense_Category': off_cat, 'Offense_Description': off_des}
     if caseid:
         url = db[1]
@@ -151,8 +151,10 @@ def report_case(caseid=False, dt_from=None, dt_to=None, off_cat=None, off_des=No
     eventID = f"{time.strftime('%y-%m-%d')}-{time.hour*3600 + time.minute*60 + time.second:06}" 
 
     if dt_from:
+        dt_from = pd.Timestamp(dt_from)  #this lets it work on hmtl input
         data['Date_From'] = dt_from.strftime('%Y-%m-%d %H:%M')
     if dt_to:
+        dt_to = pd.Timestamp(dt_to)    #this lets it work on hmtl input
         data['Date_To'] = dt_to.strftime('%Y-%m-%d %H:%M')
     data = {k: v for k, v in data.items() if v is not None}
     case = {eventID: data}

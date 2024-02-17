@@ -6,6 +6,7 @@ from database import report_crime
 from database import search_event
 from database import search_case_id
 from database import search
+from database import report_case
 import json
 
 app = Flask(__name__)
@@ -63,7 +64,7 @@ def results_index():
     event = request.args.get('Event')
     date_from = request.args.get('Date_From')
     date_reported = request.args.get('Date_Reported')
-    date_to = request.args.get('Date_To')
+    date_to = request.args.get('Date_To')  # being used as endat rather than independent parameters
     disposition = request.args.get('Disposition')
     final_incident_category = request.args.get('Final_Incident_Category')
     final_incident_description = request.args.get('Final_Incident_Description')
@@ -106,10 +107,23 @@ def crime_report_page_admin():
 @app.route("/crime/inputs/<id>")  # uploads data from site to proper database
 def report_a_crime(id):
     data = request.args
-    event_number = data['Event']
-    crime_string = json.dumps(data)
-    report_crime(crime_string)
-    return render_template('crimes_submitted.html', crimes=event_number)  #UPDATE REQUIRED on c_s.html
+    case_num = data['CaseID']
+    date_from = data['Date_From']
+    date_to = data['Date_To']
+    # date_reported = data['Date_Reported'] this is generated
+    disposition = data['Disposition']
+    final_incident_category = data['Final_Incident_Category']
+    final_incident_description = data['Final_Incident_Description']
+    initial_incident_category = data['Initial_Incident_Category']
+    initial_incident_description = data['Initial_Incident_Description']
+    location = data['Location']
+    location_type = data['Location_Type']
+    offense_category = data['Offense_Category']
+    offense_description = data['Offense_Description']
+    report_case(case_num, date_from, date_to, offense_category, offense_description, disposition,
+                initial_incident_category, initial_incident_description, final_incident_category,
+                final_incident_description, location_type, location)
+    return render_template('crimes_submitted.html', crimes=data)  #UPDATE REQUIRED on c_s.html
 
 
 if __name__ == "__main__":

@@ -1,10 +1,12 @@
-import tabula # must install java
+import tabula  # must install java
+import warnings
 import pandas as pd
 import numpy as np
 import requests
 import json
 import PyPDF2
 
+warnings.filterwarnings("error")
 # Kyle's links
 database_urls = {0: "https://fir-tutorial-dbda2-default-rtdb.firebaseio.com/",
                  1: "https://trojan-force-default-rtdb.firebaseio.com/"}
@@ -12,19 +14,6 @@ database_urls = {0: "https://fir-tutorial-dbda2-default-rtdb.firebaseio.com/",
 # Dan's links
 db = ("https://fir-tutorial-dbda2-default-rtdb.firebaseio.com/crimes.json",
       "https://trojan-force-default-rtdb.firebaseio.com/crimes.json")
-
-# Time to remove test cases
-
-crime_string = '{"date": 112923, "event": 340790, "case": 2306474, "offense": "assault", "location": "1100 Block of 37th PL", "disposition": "cleared arrest"}'
-
-crimes = ['{"date": 112923, "event": 340790, "case": 2306474, "offense": "assault", "location": "1100 Block of 37th PL", "disposition": "cleared arrest"}',
-          '{"date": 113023, "event": 340791, "case": 2306475, "offense": "theft", "location": "1200 Block of 37th PL", "disposition": "open"}',
-          '{"date": 113023, "event": 340792, "offense": "larceny", "location": "1100 Block of 37th PL", "disposition": "open"}',
-          '{"date": 113123, "event": 340793, "case": 2306476, "offense": "assault", "location": "1500 Block of 37th PL", "disposition": "cleared arrest"}',
-          ]
-
-crime_strings = ['{"date": 123563, "event": 123456, "offense": "bad stuff"}', '{"date": 127763, "event": 123477, '
-                                                                              '"offense": "really bad stuff"}']
 
 
 def batch_process_pdf(pdf_path):   # maybe keep this as a command line function for now
@@ -132,29 +121,32 @@ def report_crime(crime):
 # this works, tested 2feb24 by kwp
 
 
-def report_case(caseid=False, dt_from=None, dt_to=None, off_cat=None, off_des=None, disp=None,
-                ii_cat=None, ii_des=None, fi_cat=None, fi_des=None, loc_type=None, loc=None):
-    '''
-    dt_from and df_to must be pd.Timestamps!!!
-    '''
-    url = db[0]
-    data = {'Disposition': disp, 'Final_Incident_Category': fi_cat, 'Final_Incident_Description': fi_des,
-            'Initial_Incident_Category': ii_cat, 'Initial_Incident_Description': ii_des,
-            'Location': loc, 'Location_Type': loc_type, 'Offense_Category': off_cat, 'Offense_Description': off_des}
+def report_case(caseid=False, dt_from=None, dt_to=None, off_cat=None,
+                off_des=None, disp=None, ii_cat=None, ii_des=None,
+                fi_cat=None, fi_des=None, loc_type=None, loc=None):
+
+    data = {'Disposition': disp, 'Final_Incident_Category': fi_cat,
+            'Final_Incident_Description': fi_des, 'Location': loc,
+            'Initial_Incident_Category': ii_cat, 'Location_Type': loc_type,
+            'Offense_Category': off_cat, 'Offense_Description': off_des,
+            'Initial_Incident_Description': ii_des}
     if caseid:
         url = db[1]
-        r = requests.get(f'{db[1]}?orderBy="CaseID"&limitToLast=1')
-        data['CaseID'] = int(list(json.loads(r.text).values())[0]['CaseID']) + 1
+        r = requests.get(f'{url}?orderBy="CaseID"&limitToLast=1')
+        data['CaseID'] = int(list(r.json().values())[0]['CaseID']) + 1
+    else:
+        url = db[0]
 
-    time = pd.Timestamp.now(tz='US/Pacific')  
+    time = pd.Timestamp.now(tz='US/Pacific')
     data['Date_Reported'] = time.strftime('%Y-%m-%d %H:%M')
-    eventID = f"{time.strftime('%y-%m-%d')}-{time.hour*3600 + time.minute*60 + time.second:06}" 
+    sec = time.hour * 3600 + time.minute * 60 + time.second
+    eventID = f"{time.strftime('%y-%m-%d')}-{sec:06}"
 
     if dt_from:
-        dt_from = pd.Timestamp(dt_from)  #this lets it work on hmtl input
+        dt_from = pd.to_datetime(dt_from, format='%y-%m-%d %H:%M')
         data['Date_From'] = dt_from.strftime('%Y-%m-%d %H:%M')
     if dt_to:
-        dt_to = pd.Timestamp(dt_to)    #this lets it work on hmtl input
+        dt_to = pd.to_datetime(dt_to, format='%y-%m-%d %H:%M')
         data['Date_To'] = dt_to.strftime('%Y-%m-%d %H:%M')
     data = {k: v for k, v in data.items() if v is not None}
     case = {eventID: data}
@@ -164,10 +156,13 @@ def report_case(caseid=False, dt_from=None, dt_to=None, off_cat=None, off_des=No
 
 
 def report_crime_json(crime):
-    """This should be the function that allows a DBA to manually upload a new crime to the db. It can also be used
-    in a loop to process an inputted batch. The input should be structured as a string version of a JSON with all
-    standard parameters complete. The "event" from the pdf should be extracted and used as the primary key"""
-    #need to convert case, date, and event from string to int, this will allow for simpler queries!!!!
+    """This should be the function that allows a DBA to
+    manually upload a new crime to the db. It can also be used
+    in a loop to process an inputted batch. The input should be
+    structured as a string version of a JSON with all standard
+    parameters complete. The "event" from the pdf should be
+    extracted and used as the primary key"""
+    # need to convert case, date, and event from string to int, this will allow for simpler queries!!!!
     crime_record = json.load(crime)
     primary_key = crime_record.get("event")
     try:
@@ -181,47 +176,52 @@ def report_crime_json(crime):
     return status_code, print(f'Crime {primary_key} submitted to database!')
 
 
-def search(start_dt=None, end_dt=None, date_rep=None, off_cat=None, off_des=None, ii_cat=None,
-           ii_des=None, fi_cat=None, fi_des=None, loc_type=None, loc=None, disp=None):
+def ez_download(p):
+    r0 = requests.get(db[0], params=p)
+    r1 = requests.get(db[1], params=p)
+    return r0, r1
+
+
+def search(start_dt=None, end_dt=None, date_rep=None, off_cat=None,
+           off_des=None, ii_cat=None, ii_des=None, fi_cat=None,
+           fi_des=None, loc_type=None, loc=None, disp=None):
     '''
     Please check datatypes before passing values into this function
-    start_dt, end_dt -> str "YY-MM-DD" 
+    start_dt, end_dt -> str "YY-MM-DD"
     off_cat, ii_cat, fi_cat = str CATEGORIES in project.py
     loc_type = str LOCATION_TYPES in project.py
     disp = str DISPOSITIONS in project.py
     off_des, ii_des, fi_des = str
     '''
     if start_dt:
-        start_dt = pd.to_datetime(start_dt, format="%y-%m-%d").strftime("%Y-%m-%d")
+        start_dt = pd.to_datetime(start_dt, format="%y-%m-%d")
+        start_dt = start_dt.strftime("%Y-%m-%d")
     if end_dt:
-        end_dt = (pd.to_datetime(end_dt, format="%y-%m-%d") + pd.Timedelta(days=1)).strftime("%Y-%m-%d")
+        end_dt = pd.to_datetime(end_dt, format="%y-%m-%d")
+        end_dt = end_dt + pd.Timedelta(days=1)
+        end_dt = end_dt.strftime("%Y-%m-%d")
     # Pick one filter and download data
     if date_rep:
-        date_rep = pd.to_datetime(date_rep, format="%y-%m-%d").strftime("%Y-%m-%d")
-        next = (pd.to_datetime(date_rep, format="%Y-%m-%d") + pd.Timedelta(days=1)).strftime("%Y-%m-%d")
-        r0 = requests.get(db[0], params={'orderBy': '"Date_Reported"', 'startAt': f'"{date_rep}"', 'endAt': f'"{next}"'})
-        r1 = requests.get(db[1], params={'orderBy': '"Date_Reported"', 'startAt': f'"{date_rep}"', 'endAt': f'"{next}"'})
+        date_rep = pd.to_datetime(date_rep, format="%y-%m-%d")
+        next = date_rep + pd.Timedelta(days=1)
+        date_rep = date_rep.strftime("%Y-%m-%d")
+        next = next.strftime("%Y-%m-%d")
+
+        r0, r1 = ez_download({'orderBy': '"Date_Reported"', 'startAt': f'"{date_rep}"', 'endAt': f'"{next}"'})
     elif start_dt:
-        r0 = requests.get(db[0], params={'orderBy': '"Date_From"', 'startAt': f'"{start_dt}"'})
-        r1 = requests.get(db[1], params={'orderBy': '"Date_From"', 'startAt': f'"{start_dt}"'})
+        r0, r1 = ez_download({'orderBy': '"Date_From"', 'startAt': f'"{start_dt}"'})
     elif end_dt:
-        r0 = requests.get(db[0], params={'orderBy': '"Date_To"', 'endAt': f'"{end_dt}"'})
-        r1 = requests.get(db[1], params={'orderBy': '"Date_To"', 'endAt': f'"{end_dt}"'})
+        r0, r1 = ez_download({'orderBy': '"Date_To"', 'endAt': f'"{end_dt}"'})
     elif off_cat:
-        r0 = requests.get(db[0], params={'orderBy': '"Offense_Category"', 'equalTo': f'"{off_cat}"'})
-        r1 = requests.get(db[1], params={'orderBy': '"Offense_Category"', 'equalTo': f'"{off_cat}"'})
+        r0, r1 = ez_download({'orderBy': '"Offense_Category"', 'equalTo': f'"{off_cat}"'})
     elif ii_cat:
-        r0 = requests.get(db[0], params={'orderBy': '"Initial_Incident_Category"', 'equalTo': f'"{ii_cat}"'})
-        r1 = requests.get(db[1], params={'orderBy': '"Initial_Incident_Category"', 'equalTo': f'"{ii_cat}"'})
+        r0, r1 = ez_download({'orderBy': '"Initial_Incident_Category"', 'equalTo': f'"{ii_cat}"'})
     elif fi_cat:
-        r0 = requests.get(db[0], params={'orderBy': '"Final_Incident_Category"', 'equalTo': f'"{fi_cat}"'})
-        r1 = requests.get(db[1], params={'orderBy': '"Final_Incident_Category"', 'equalTo': f'"{fi_cat}"'})
+        r0, r1 = ez_download({'orderBy': '"Final_Incident_Category"', 'equalTo': f'"{fi_cat}"'})
     elif loc_type:
-        r0 = requests.get(db[0], params={'orderBy': '"Location_Type"', 'equalTo': f'"{loc_type}"'})
-        r1 = requests.get(db[1], params={'orderBy': '"Location_Type"', 'equalTo': f'"{loc_type}"'})
+        r0, r1 = ez_download({'orderBy': '"Location_Type"', 'equalTo': f'"{loc_type}"'})
     elif disp:
-        r0 = requests.get(db[0], params={'orderBy': '"Disposition"', 'equalTo': f'"{disp}"'})
-        r1 = requests.get(db[1], params={'orderBy': '"Disposition"', 'equalTo': f'"{disp}"'})
+        r0, r1 = ez_download({'orderBy': '"Disposition"', 'equalTo': f'"{disp}"'})
     else:
         r0 = requests.get(db[0])
         r1 = requests.get(db[1])
@@ -230,7 +230,7 @@ def search(start_dt=None, end_dt=None, date_rep=None, off_cat=None, off_des=None
     data = r0.json()
     data.update(r1.json())
     df = pd.DataFrame.from_dict(data, orient='index').sort_index()
-    
+
     if start_dt and ("Date_From" in df):
         df = df[df.Date_From >= start_dt]
     if end_dt and ("Date_To" in df):
@@ -249,22 +249,25 @@ def search(start_dt=None, end_dt=None, date_rep=None, off_cat=None, off_des=None
 
     # case insentitive partial match
     if off_des and ("Offense_Description" in df):
-        df = df[df.Offense_Description.str.lower().str.contains(off_des.lower()).fillna(False)]
+        df = df[df.Offense_Description.str.contains(off_des, regex=False, na=False, case=False)]
     if ii_des and ("Initial_Incident_Description" in df):
-        df = df[df.Initial_Incident_Description.str.lower().str.contains(ii_des.lower()).fillna(False)]
+        df = df[df.Initial_Incident_Description.str.contains(ii_des, regex=False, na=False, case=False)]
     if fi_des and ("Final_Incident_Description" in df):
-        df = df[df.Final_Incident_Description.str.lower().str.contains(fi_des.lower()).fillna(False)]
+        df = df[df.Final_Incident_Description.str.contains(fi_des, regex=False, na=False, case=False)]
     if loc and ("Location" in df):
-        df = df[df.Location.str.lower().str.contains(loc.lower()).fillna(False)]
+        df = df[df.Location.str.contains(loc, regex=False, na=False, case=False)]
+
     df = df.fillna('N/A')
     return df.to_dict(orient='index')
 
 
 def search_case_id(case_id):
-    return requests.get(db[1], params={'orderBy': '"CaseID"', 'equalTo': f'"{case_id}"'}).json()
+    r1 = requests.get(db[1], params={'orderBy': '"CaseID"', 'equalTo': f'"{case_id}"'})
+    return r1.json()
 
 
 def search_event(event):
-    event_match = requests.get(f'{db[0]}?orderBy="$key"&equalTo="{event}"').json()
-    event_match.update(requests.get(f'{db[1]}?orderBy="$key"&equalTo="{event}"').json())
+    r0, r1 = ez_download({'orderBy': '"$key"', 'equalTo': f'"{event}"'})
+    event_match = r0.json()
+    event_match.update(r1.json())
     return event_match

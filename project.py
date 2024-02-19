@@ -20,11 +20,11 @@ CATEGORIES = {'ADMINISTRATIVE', 'ALARM RESPONSE', 'ALCOHOL', 'ARSON', 'ASSAULT',
               'THEFT-PETTY', 'THEFT-TRICK', 'TRAFFIC', 'TRESPASS', 'VANDALISM', 'VEHICLE CODE', 'WARRANT', 'WEAPONS'}
 
 DISPOSITIONS = {'ADVISED & COMPLIED', 'ADVISED OF 602 PC & RELEASED', 'CANCELLED EVENT', 'CLOSED',
-               'Cleared Arrest', 'Cleared Other', 'Cleared by Exceptional Means', 'FIELD INTERVIEW & RELEASE',
-               'Hold Over', 'Inactive Investigation', 'Investigation Continued', 'LAFD RESPONDING & WILL HANDLE',
-               'LAPD ON SCENE & WILL HANDLE', 'NO CRIME OCCURRED; NO REPORT TAKEN', 'Open', 'PENDING INVESTIGATION',
-               'REPORT TAKEN', 'REQUEST COMPLETED', 'RESOLVED UPON ARRIVAL', 'TRANSPORTED BY LAFD PARAMEDICS',
-               'UNABLE TO LOCATE - GONE ON ARRIVAL', 'Void'}
+                'Cleared Arrest', 'Cleared Other', 'Cleared by Exceptional Means', 'FIELD INTERVIEW & RELEASE',
+                'Hold Over', 'Inactive Investigation', 'Investigation Continued', 'LAFD RESPONDING & WILL HANDLE',
+                'LAPD ON SCENE & WILL HANDLE', 'NO CRIME OCCURRED; NO REPORT TAKEN', 'Open', 'PENDING INVESTIGATION',
+                'REPORT TAKEN', 'REQUEST COMPLETED', 'RESOLVED UPON ARRIVAL', 'TRANSPORTED BY LAFD PARAMEDICS',
+                'UNABLE TO LOCATE - GONE ON ARRIVAL', 'Void'}
 
 LOCATION_TYPES = {'Non-campus building or property', 'Non-reportable location', 'On Campus',
                   'On Campus - Residential Facility', 'Public property'}
@@ -123,7 +123,7 @@ def report_a_crime(id):
     report_case(case_num, date_from, date_to, offense_category, offense_description, disposition,
                 initial_incident_category, initial_incident_description, final_incident_category,
                 final_incident_description, location_type, location)
-    return render_template('crimes_submitted.html', crimes=data)  #UPDATE REQUIRED on c_s.html
+    return render_template('crimes_submitted.html', crimes=data)  # UPDATE REQUIRED on c_s.html
 
 
 if __name__ == "__main__":

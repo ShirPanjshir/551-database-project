@@ -13,11 +13,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         h1 {font-size: 40px; font-family: arial; color: rgb(169,54,54); text-align: center}
-        h2 {font-size: 20px; font-family: arial}
-        h3 {color: rgb(200, 60, 60);}
+        h2 {font-size: 30px; font-family: arial; color: rgb(169,20,20); text-align: center}
+        h3 {color: rgb(0, 60, 60);}
         button {font-weight: bold; font-family: arial}
-        #database {max-width: 200px; margin-left: 0px; border:1px solid black; text-align: center;}
-        #CRUD {max-width: 200px; border:1px solid black; text-align: center;}
+        #database {max-width: 200px; margin-left: 0px; border:1px solid black; text-align: center; background-color: #FF7f7f;}
+        #CRUD {max-width: 200px; border:1px solid black; text-align: center; background-color: #FF7f7f;}
 <!--        #python {max-width: 320px; margin: 0 auto 0 auto;}-->
         #crimes {margin-bottom: 16px}
         table, th, td {border: 1px solid black;}
@@ -27,27 +27,29 @@
     <!-- {display: block; margin-left: auto; margin-right: auto; width: 50%;}-->
 </head>
 
-<body>
+<body style="background-color:#D4AF37">
 
 <h1>DSCI 551 Distributed Database by B. Meeler, D. Lee, and K.W. Parker</h1>
+<h2>{{ number_entries }} Database Entries, as of {{ recent }}</h2>
 <div style="max-width: 320px; float: right; width: 40%;">
 <img src="http://127.0.0.1:5000/static/usc_data_science.jpeg" height="320" width="320">
     </div>
 <div id="database">
-<h2> Search the Database!</h2>
+<h3> Search the Database!</h3>
 <button onclick="window.location.href='http://127.0.0.1:5000/search';">Let's Get It </button>
 </div>
 <br>
+
 <br>
 <div id="CRUD">
     <br>
     <br>
-<h2> Database Updates *** Admins Only</h2>
+<h3> Database Updates Admins Only</h3>
     <br>
-<button onclick="window.location.href='http://127.0.0.1:5000/reportacrime';"> Report a Crime!</button>
+<button onclick="window.location.href='http://127.0.0.1:5000/reportacrime';"> Enter Database</button>
 
 </div>
-<h2>******** SQL Team 6********</h2>
+<h3>******** SQL Team 6********</h3>
     <p> Brian Meeler - (bio)</p>
     <p> Dan Lee - (bio)</p>
     <p> Kyle Wayne Parker - COWBOY</p>

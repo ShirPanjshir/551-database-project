@@ -8,8 +8,12 @@
         .form-row {display: table-row;}
         .form-cell {display: table-cell; padding: 10px;}
         label {font-weight: bold;}
+        #Delete {border: 1px solid black; max-width: 500px; background-color: #FF7f7f; text-align: center}
+        #form-container {border: 1px solid black; max-width: 500px; background-color: #defefe;}
+        #form-container1 {display: flex; justify-content: center; align-items: center;}
+        #form-container2 {border: 1px solid black; max-width: 500px; background-color: #dedede;}
     </style>
-    <title>Report a Crime</title>
+
     <button onclick="window.location.href='http://127.0.0.1:5000/';">HOME </button>
 
 {% if password != 'PLEASE' %}
@@ -20,7 +24,7 @@
 {% endif %}
 
 {% if password == 'PLEASE' %}
-<h1>REPORT A CRIME</h1>
+<h1>Make Database Adjustments Below: Create, Update, Delete</h1>
     <style>
     body {background-color: #89d0f1}
 </style>
@@ -35,6 +39,7 @@
 {% endif %}
 {% if password == 'PLEASE' %}
 <div id="form-container">
+    <h1> REPORT A CRIME</h1>
     <form action="/crime/inputs/<id>">
 <!--        <div class="form-row">-->
 <!--            <div class="form-cell">-->
@@ -45,8 +50,11 @@
 
         <div class="form-row">
             <div class="form-cell">
-                <label for="CaseID">CaseID Seed</label>
-                    <input type="text" name="CaseID" placeholder="seven digit integer">
+                <label for="AssignCaseID">Assign Case Number?</label>
+                <input id="toggle-on" name="decision" type="radio" value="yes">
+                <label for="toggle-on">Yes</label>
+                <input id="toggle-off" name="decision" type="radio" value="no">
+                <label for="toggle-off">No</label>
             </div>
         </div>
 
@@ -56,13 +64,122 @@
                     <input type="text" name="Date_From" placeholder="YYYY-MM-DD HH:MM">
                 </div>
         </div>
-<!--    <br>-->
-<!--        <div class="form-row">-->
-<!--            <div class="form-cell">-->
-<!--                <label for="Date_Reported">Date_Reported</label>-->
-<!--                    <input type="text" name="Date_Reported" placeholder="YYYY-MM-DD HH:MM">-->
-<!--            </div>-->
-<!--        </div>-->
+
+        <div class="form-row">
+            <div class="form-cell">
+                <label for="Date_To">Date_To</label>
+                    <input type="text" name="Date_To" placeholder="YYYY-MM-DD HH:MM">
+                </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-cell">
+                <label for="Disposition">Disposition</label>
+                    <select name="Disposition">
+                        {% for disposition in dispositions %}
+                        <option value="{{ disposition }}">{{ disposition }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-cell">
+                <label for="Final_Incident_Category">Final_Incident_Category</label>
+                    <select name="Final_Incident_Category">
+                        {% for category in categories %}
+                        <option value="{{ category }}">{{ category }}</option>
+                        {% endfor %}
+                    </select>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-cell">
+                <label for="Final_Incident_Description">Final_Incident_Description</label>
+                    <input type="text" name="Final_Incident_Description" placeholder="STRING">
+                </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-cell">
+                <label for="Initial_Incident_Category">Initial_Incident_Category</label>
+                    <select name="Initial_Incident_Category">
+                        {% for category in categories %}
+                        <option value="{{ category }}">{{ category }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-cell">
+                <label for="Initial_Incident_Description">Initial_Incident_Description</label>
+                    <input type="text" name="Initial_Incident_Description" placeholder="STRING">
+                </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-cell">
+                <label for="Location">Location</label>
+                    <input type="text" name="Location" placeholder="STRING">
+                </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-cell">
+                <label for="Location_Type">Location_Type</label>
+                    <input type="text" name="Location_Type" placeholder="STRING">
+                </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-cell">
+                <label for="Offense_Category">Offense_Category</label>
+                    <select name="Offense_Category">
+                        {% for category in categories %}
+                        <option value="{{ category }}">{{ category }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-cell">
+                <label for="Offense_Description">Offense_Description</label>
+                    <input type="text" name="Offense_Description" placeholder="STRING">
+                </div>
+        </div>
+    <br>
+<input type="submit" name="SUBMIT">
+</form>
+</div>
+<br>
+    <br>
+<!-- This is the update by event number html -->
+<div id="form-container2">
+    <h1> UPDATE A CRIME</h1>
+    <form action="/updateevent">
+        <div class="form-row">
+            <div class="form-cell">
+                <label for="Event">Event</label>
+                    <input type="text" name="Event" placeholder="NN-NN-NN-NNNNNN">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-cell">
+                <label for="CaseID">CaseID</label>
+                    <input type="text" name="CaseID" placeholder="NNNNNNN">
+                </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-cell">
+                <label for="Date_From">Date_From</label>
+                    <input type="text" name="Date_From" placeholder="YYYY-MM-DD HH:MM">
+                </div>
+        </div>
 
         <div class="form-row">
             <div class="form-cell">
@@ -136,6 +253,25 @@
     <br>
 <input type="submit" name="SUBMIT">
 </form>
+</div>
+<br>
+<br>
+<!-- This is the delete by unique event number html -->
+    <div id="Delete">
+    <h1>DELETE AN EVENT</h1>
+<div id="form-container1">
+    <form action="/deletecase">
+        <div class="form-row">
+            <div class="form-cell">
+                <label for="Event">Event</label>
+                    <input type="text" name="Event" placeholder="NN-NN-NN-NNNNNN">
+            </div>
+        </div>
+    <br>
+<input type="submit" name="SUBMIT" onclick="return confirm('Are you sure? Deletions are permanent!');"/>
+</form>
+    </div>
+        </div>
 {% else %}
 <p> What's the magic word???.</p>
 {% endif %}

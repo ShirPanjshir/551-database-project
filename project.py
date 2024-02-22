@@ -7,6 +7,10 @@ from database import search_event
 from database import search_case_id
 from database import search
 from database import report_case
+from database import number_entries
+from database import last_entry_date_time
+from database import delete_case
+from database import update_event
 import json
 
 app = Flask(__name__)
@@ -20,29 +24,21 @@ CATEGORIES = {'ADMINISTRATIVE', 'ALARM RESPONSE', 'ALCOHOL', 'ARSON', 'ASSAULT',
               'THEFT-PETTY', 'THEFT-TRICK', 'TRAFFIC', 'TRESPASS', 'VANDALISM', 'VEHICLE CODE', 'WARRANT', 'WEAPONS'}
 
 DISPOSITIONS = {'ADVISED & COMPLIED', 'ADVISED OF 602 PC & RELEASED', 'CANCELLED EVENT', 'CLOSED',
-                'Cleared Arrest', 'Cleared Other', 'Cleared by Exceptional Means', 'FIELD INTERVIEW & RELEASE',
-                'Hold Over', 'Inactive Investigation', 'Investigation Continued', 'LAFD RESPONDING & WILL HANDLE',
-                'LAPD ON SCENE & WILL HANDLE', 'NO CRIME OCCURRED; NO REPORT TAKEN', 'Open', 'PENDING INVESTIGATION',
-                'REPORT TAKEN', 'REQUEST COMPLETED', 'RESOLVED UPON ARRIVAL', 'TRANSPORTED BY LAFD PARAMEDICS',
-                'UNABLE TO LOCATE - GONE ON ARRIVAL', 'Void'}
+               'Cleared Arrest', 'Cleared Other', 'Cleared by Exceptional Means', 'FIELD INTERVIEW & RELEASE',
+               'Hold Over', 'Inactive Investigation', 'Investigation Continued', 'LAFD RESPONDING & WILL HANDLE',
+               'LAPD ON SCENE & WILL HANDLE', 'NO CRIME OCCURRED; NO REPORT TAKEN', 'Open', 'PENDING INVESTIGATION',
+               'REPORT TAKEN', 'REQUEST COMPLETED', 'RESOLVED UPON ARRIVAL', 'TRANSPORTED BY LAFD PARAMEDICS',
+               'UNABLE TO LOCATE - GONE ON ARRIVAL', 'Void'}
 
 LOCATION_TYPES = {'Non-campus building or property', 'Non-reportable location', 'On Campus',
                   'On Campus - Residential Facility', 'Public property'}
 
-crimes = [{"date": 112923, "event": 340790, "case": 2306474, "offense": "assault", "location": "1100 Block of 37th PL"
-           , "disposition": "cleared arrest"},
-          {"date": 113023, "event": 340791, "case": 2306475, "offense": "theft", "location": "1200 Block of 37th PL"
-              , "disposition": "open"},
-          {"date": 113023, "event": 340792, "offense": "larceny", "location": "1100 Block of 37th PL"
-              , "disposition": "open"},
-          {"date": 113123, "event": 340793, "case": 2306476, "offense": "assault", "location": "1500 Block of 37th PL"
-              , "disposition": "cleared arrest"},
-          ]
-
 
 @app.route("/")
 def landing_site():
-    return render_template('home.html', crimes=crimes)
+    num_entries = number_entries()
+    recent = last_entry_date_time()
+    return render_template('home.html', number_entries=num_entries, recent=recent)
 
 
 @app.route("/crime/<id>")
@@ -99,7 +95,8 @@ def crime_report_page_admin():
     input_password = request.args.get('password')
     print(input_password)
     if input_password == 'PLEASE':
-        return render_template('reportacrime.html', password=input_password)
+        return render_template('reportacrime.html', password=input_password, categories=CATEGORIES,
+                               dispositions=DISPOSITIONS)
     else:
         return render_template('magicword.html')
 
@@ -107,7 +104,7 @@ def crime_report_page_admin():
 @app.route("/crime/inputs/<id>")  # uploads data from site to proper database
 def report_a_crime(id):
     data = request.args
-    case_num = data['CaseID']
+    decision = data['decision']
     date_from = data['Date_From']
     date_to = data['Date_To']
     # date_reported = data['Date_Reported'] this is generated
@@ -120,10 +117,52 @@ def report_a_crime(id):
     location_type = data['Location_Type']
     offense_category = data['Offense_Category']
     offense_description = data['Offense_Description']
-    report_case(case_num, date_from, date_to, offense_category, offense_description, disposition,
+    report_case(decision, date_from, date_to, offense_category, offense_description, disposition,
                 initial_incident_category, initial_incident_description, final_incident_category,
                 final_incident_description, location_type, location)
-    return render_template('crimes_submitted.html', crimes=data)  # UPDATE REQUIRED on c_s.html
+    return render_template('crimes_submitted.html', crimes=data)  #UPDATE REQUIRED on c_s.html
+
+
+@app.route("/deletecase")
+def delete_a_case():
+    data = request.args
+    event = data['Event']
+    if search_event(event):
+        delete_case(event)
+        print(f'Case with Event Number {event} deleted')
+        message = f'Case with Event Number {event} deleted.'
+    else:
+        print(f'Event Number {event} not in Database, no entries removed.')
+        message = f'Event Number {event} not in Database, no entries removed.'
+    return render_template('crimes_deleted.html', message=message)
+
+
+@app.route("/updateevent")
+def update_event_info():
+    data = request.args
+    event = data['Event']
+    caseid = data['CaseID']
+    date_from = data['Date_From']
+    date_to = data['Date_To']
+    disposition = data['Disposition']
+    final_incident_category = data['Final_Incident_Category']
+    final_incident_description = data['Final_Incident_Description']
+    initial_incident_category = data['Initial_Incident_Category']
+    initial_incident_description = data['Initial_Incident_Description']
+    location = data['Location']
+    location_type = data['Location_Type']
+    offense_category = data['Offense_Category']
+    offense_description = data['Offense_Description']
+    if search_event(event):
+        update_event(event, caseid, date_from, date_to, disposition, final_incident_category,
+                     final_incident_description, initial_incident_category, initial_incident_description, location
+                     , location_type, offense_category, offense_description)
+        print(f'Case with Event Number {event} updated')
+        message = f'Case with Event Number {event} updated.'
+    else:
+        print(f'Event Number {event} not in Database, no entries updated.')
+        message = f'Event Number {event} not in Database, no entries updated.'
+    return render_template('crimes_updated.html', message=message)
 
 
 if __name__ == "__main__":

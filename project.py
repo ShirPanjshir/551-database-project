@@ -2,7 +2,7 @@ from flask import Flask
 from flask import render_template
 from flask import jsonify
 from flask import request
-from database import report_crime
+# from database import report_crime
 from database import search_event
 from database import search_case_id
 from database import search
@@ -24,11 +24,11 @@ CATEGORIES = {'ADMINISTRATIVE', 'ALARM RESPONSE', 'ALCOHOL', 'ARSON', 'ASSAULT',
               'THEFT-PETTY', 'THEFT-TRICK', 'TRAFFIC', 'TRESPASS', 'VANDALISM', 'VEHICLE CODE', 'WARRANT', 'WEAPONS'}
 
 DISPOSITIONS = {'ADVISED & COMPLIED', 'ADVISED OF 602 PC & RELEASED', 'CANCELLED EVENT', 'CLOSED',
-               'Cleared Arrest', 'Cleared Other', 'Cleared by Exceptional Means', 'FIELD INTERVIEW & RELEASE',
-               'Hold Over', 'Inactive Investigation', 'Investigation Continued', 'LAFD RESPONDING & WILL HANDLE',
-               'LAPD ON SCENE & WILL HANDLE', 'NO CRIME OCCURRED; NO REPORT TAKEN', 'Open', 'PENDING INVESTIGATION',
-               'REPORT TAKEN', 'REQUEST COMPLETED', 'RESOLVED UPON ARRIVAL', 'TRANSPORTED BY LAFD PARAMEDICS',
-               'UNABLE TO LOCATE - GONE ON ARRIVAL', 'Void'}
+                'Cleared Arrest', 'Cleared Other', 'Cleared by Exceptional Means', 'FIELD INTERVIEW & RELEASE',
+                'Hold Over', 'Inactive Investigation', 'Investigation Continued', 'LAFD RESPONDING & WILL HANDLE',
+                'LAPD ON SCENE & WILL HANDLE', 'NO CRIME OCCURRED; NO REPORT TAKEN', 'Open', 'PENDING INVESTIGATION',
+                'REPORT TAKEN', 'REQUEST COMPLETED', 'RESOLVED UPON ARRIVAL', 'TRANSPORTED BY LAFD PARAMEDICS',
+                'UNABLE TO LOCATE - GONE ON ARRIVAL', 'Void'}
 
 LOCATION_TYPES = {'Non-campus building or property', 'Non-reportable location', 'On Campus',
                   'On Campus - Residential Facility', 'Public property'}

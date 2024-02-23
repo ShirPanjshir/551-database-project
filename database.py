@@ -1,9 +1,11 @@
-import tabula # must install java
+import tabula  # must install java
+import warnings
 import pandas as pd
 import numpy as np
 import requests
 import json
-import PyPDF2
+
+warnings.simplefilter(action='ignore', category=FutureWarning)
 
 # Kyle's links
 database_urls = {0: "https://fir-tutorial-dbda2-default-rtdb.firebaseio.com/",
@@ -13,36 +15,22 @@ database_urls = {0: "https://fir-tutorial-dbda2-default-rtdb.firebaseio.com/",
 db = ("https://fir-tutorial-dbda2-default-rtdb.firebaseio.com/crimes.json",
       "https://trojan-force-default-rtdb.firebaseio.com/crimes.json")
 
-# Time to remove test cases
 
-crime_string = '{"date": 112923, "event": 340790, "case": 2306474, "offense": "assault", "location": "1100 Block of 37th PL", "disposition": "cleared arrest"}'
-
-crimes = ['{"date": 112923, "event": 340790, "case": 2306474, "offense": "assault", "location": "1100 Block of 37th PL", "disposition": "cleared arrest"}',
-          '{"date": 113023, "event": 340791, "case": 2306475, "offense": "theft", "location": "1200 Block of 37th PL", "disposition": "open"}',
-          '{"date": 113023, "event": 340792, "offense": "larceny", "location": "1100 Block of 37th PL", "disposition": "open"}',
-          '{"date": 113123, "event": 340793, "case": 2306476, "offense": "assault", "location": "1500 Block of 37th PL", "disposition": "cleared arrest"}',
-          ]
-
-crime_strings = ['{"date": 123563, "event": 123456, "offense": "bad stuff"}', '{"date": 127763, "event": 123477, '
-                                                                              '"offense": "really bad stuff"}']
-
-
-def batch_process_pdf(pdf_path):   # maybe keep this as a command line function for now
-    page = len(PyPDF2.PdfReader(pdf_path).pages)
-    pdf = []
+def batch_process_pdf(pdf_path):
+    # 22FEB24 by Dan
     error = []
-    for i in range(1, page+1):
-        try:
-            pdf.extend(tabula.read_pdf(pdf_path, pages=i))
-        except:
-            error.append(i)
+    pdf = tabula.read_pdf(pdf_path, pages='all')
     header = ('Date Reported', 'Event #', 'Case #', 'Offense', 'Initial Incident', 'Final Incident',
               'Date From', 'Date To', 'Location', 'Disposition')
     for i, v in enumerate(pdf):
-        if tuple(v.columns) != header:
+        if v.iloc[:, 0].isnull().any() or len(v.columns) != 10:
+            error.append(i)
+        elif tuple(v.columns) != header:
             v = v.T.reset_index().T.reset_index(drop=True)  # send column names back to the first row
             v.columns = header  # rename column names
             pdf[i] = v
+    pdf = [v for i, v in enumerate(pdf) if i not in error]
+    error = [i+1 for i in error]
     df = pd.concat(pdf).reset_index(drop=True)
     df = df.replace(r'\r+|\n+|\t+', ' ', regex=True)
     df['Offense_Category'] = df.Offense.str.split(' -', n=1).str[0]
@@ -112,26 +100,6 @@ def batch_process_pdf(pdf_path):   # maybe keep this as a command line function 
         return "Upload Complete."
 
 
-def report_crime(crime):
-    """This should be the function that allows a DBA to manually upload a new crime to the db. It can also be used
-    in a loop to process an inputted batch. The input should be structured as a string version of a JSON with all
-    standard parameters complete. The "event" from the pdf should be extracted and used as the primary key"""
-    crime_record = json.loads(crime)
-    del crime_record['SUBMIT']
-    primary_key = crime_record.get("Event")
-    try:
-        if crime_record.get("case") > 1:
-            url = database_urls.get(1)
-    except:
-        url = database_urls.get(0)
-    url = f"{url}/crimes/{primary_key}/.json"
-    response = requests.put(url, json=crime_record)
-    status_code = response.status_code
-    return status_code, print(f'Crime {primary_key} submitted to database!')
-
-# this works, tested 2feb24 by kwp, updated to report_case below:
-
-
 def report_case(caseid=False, dt_from=None, dt_to=None, off_cat=None, off_des=None, disp=None,
                 ii_cat=None, ii_des=None, fi_cat=None, fi_des=None, loc_type=None, loc=None):
     '''
@@ -143,85 +111,65 @@ def report_case(caseid=False, dt_from=None, dt_to=None, off_cat=None, off_des=No
             'Location': loc, 'Location_Type': loc_type, 'Offense_Category': off_cat, 'Offense_Description': off_des}
     if caseid == 'yes':
         url = db[1]
-        r = requests.get(f'{db[1]}?orderBy="CaseID"&limitToLast=1')
-        data['CaseID'] = str(int(list(json.loads(r.text).values())[0]['CaseID']) + 1) #increments properly now
+        r = requests.get(f'{url}?orderBy="CaseID"&limitToLast=1')
+        data['CaseID'] = str(int(list(json.loads(r.text).values())[0]['CaseID']) + 1)
+    else:
+        url = db[0]
 
-    time = pd.Timestamp.now(tz='US/Pacific')  
+    time = pd.Timestamp.now(tz='US/Pacific')
     data['Date_Reported'] = time.strftime('%Y-%m-%d %H:%M')
-    eventID = f"{time.strftime('%y-%m-%d')}-{time.hour*3600 + time.minute*60 + time.second:06}" 
+    sec = time.hour * 3600 + time.minute * 60 + time.second
+    eventID = f"{time.strftime('%y-%m-%d')}-{sec:06}"
 
     if dt_from:
-        dt_from = pd.Timestamp(dt_from)  #this lets it work on hmtl input
+        dt_from = pd.to_datetime(dt_from, format='%Y-%m-%d %H:%M')
         data['Date_From'] = dt_from.strftime('%Y-%m-%d %H:%M')
     if dt_to:
-        dt_to = pd.Timestamp(dt_to)    #this lets it work on hmtl input
+        dt_to = pd.to_datetime(dt_to, format='%Y-%m-%d %H:%M')
         data['Date_To'] = dt_to.strftime('%Y-%m-%d %H:%M')
-    data = {k: v for k, v in data.items() if v is not None}
+    data = {k: v for k, v in data.items() if v}
     case = {eventID: data}
-    r = requests.patch(url, json=case)  # e can rewrite with base_URL to make this a PUT vs PATCH function???
-    # FYI the primary key is eventID (automatically generated based on time reported)
+    r = requests.patch(url, json=case)
     return r.status_code
 
 
-def report_crime_json(crime):
-    """This should be the function that allows a DBA to manually upload a new crime to the db. It can also be used
-    in a loop to process an inputted batch. The input should be structured as a string version of a JSON with all
-    standard parameters complete. The "event" from the pdf should be extracted and used as the primary key"""
-    #need to convert case, date, and event from string to int, this will allow for simpler queries!!!!
-    crime_record = json.load(crime)
-    primary_key = crime_record.get("event")
-    try:
-        if crime_record.get("case") > 1:
-            url = database_urls.get(1)
-    except:
-        url = database_urls.get(0)
-    url = f"{url}/crimes/{primary_key}/.json"
-    response = requests.put(url, json=crime_record)
-    status_code = response.status_code
-    return status_code, print(f'Crime {primary_key} submitted to database!')
+def ez_download(p):
+    r0 = requests.get(db[0], params=p)
+    r1 = requests.get(db[1], params=p)
+    return r0, r1
 
 
 def search(start_dt=None, end_dt=None, date_rep=None, off_cat=None, off_des=None, ii_cat=None,
            ii_des=None, fi_cat=None, fi_des=None, loc_type=None, loc=None, disp=None):
-    '''
-    Please check datatypes before passing values into this function
-    start_dt, end_dt -> str "YY-MM-DD" 
-    off_cat, ii_cat, fi_cat = str CATEGORIES in project.py
-    loc_type = str LOCATION_TYPES in project.py
-    disp = str DISPOSITIONS in project.py
-    off_des, ii_des, fi_des = str
-    '''
+
     if start_dt:
-        start_dt = pd.to_datetime(start_dt, format="%y-%m-%d").strftime("%Y-%m-%d")
+        start_dt = pd.to_datetime(start_dt, format="%y-%m-%d")
+        start_dt = start_dt.strftime("%Y-%m-%d")
     if end_dt:
-        end_dt = (pd.to_datetime(end_dt, format="%y-%m-%d") + pd.Timedelta(days=1)).strftime("%Y-%m-%d")
+        end_dt = pd.to_datetime(end_dt, format="%y-%m-%d")
+        end_dt = end_dt + pd.Timedelta(days=1)
+        end_dt = end_dt.strftime("%Y-%m-%d")
     # Pick one filter and download data
     if date_rep:
-        date_rep = pd.to_datetime(date_rep, format="%y-%m-%d").strftime("%Y-%m-%d")
-        next = (pd.to_datetime(date_rep, format="%Y-%m-%d") + pd.Timedelta(days=1)).strftime("%Y-%m-%d")
-        r0 = requests.get(db[0], params={'orderBy': '"Date_Reported"', 'startAt': f'"{date_rep}"', 'endAt': f'"{next}"'})
-        r1 = requests.get(db[1], params={'orderBy': '"Date_Reported"', 'startAt': f'"{date_rep}"', 'endAt': f'"{next}"'})
+        date_rep = pd.to_datetime(date_rep, format="%y-%m-%d")
+        next = date_rep + pd.Timedelta(days=1)
+        date_rep = date_rep.strftime("%Y-%m-%d")
+        next = next.strftime("%Y-%m-%d")
+        r0, r1 = ez_download({'orderBy': '"Date_Reported"', 'startAt': f'"{date_rep}"', 'endAt': f'"{next}"'})
     elif start_dt:
-        r0 = requests.get(db[0], params={'orderBy': '"Date_From"', 'startAt': f'"{start_dt}"'})
-        r1 = requests.get(db[1], params={'orderBy': '"Date_From"', 'startAt': f'"{start_dt}"'})
+        r0, r1 = ez_download({'orderBy': '"Date_From"', 'startAt': f'"{start_dt}"'})
     elif end_dt:
-        r0 = requests.get(db[0], params={'orderBy': '"Date_To"', 'endAt': f'"{end_dt}"'})
-        r1 = requests.get(db[1], params={'orderBy': '"Date_To"', 'endAt': f'"{end_dt}"'})
+        r0, r1 = ez_download({'orderBy': '"Date_To"', 'endAt': f'"{end_dt}"'})
     elif off_cat:
-        r0 = requests.get(db[0], params={'orderBy': '"Offense_Category"', 'equalTo': f'"{off_cat}"'})
-        r1 = requests.get(db[1], params={'orderBy': '"Offense_Category"', 'equalTo': f'"{off_cat}"'})
+        r0, r1 = ez_download({'orderBy': '"Offense_Category"', 'equalTo': f'"{off_cat}"'})
     elif ii_cat:
-        r0 = requests.get(db[0], params={'orderBy': '"Initial_Incident_Category"', 'equalTo': f'"{ii_cat}"'})
-        r1 = requests.get(db[1], params={'orderBy': '"Initial_Incident_Category"', 'equalTo': f'"{ii_cat}"'})
+        r0, r1 = ez_download({'orderBy': '"Initial_Incident_Category"', 'equalTo': f'"{ii_cat}"'})
     elif fi_cat:
-        r0 = requests.get(db[0], params={'orderBy': '"Final_Incident_Category"', 'equalTo': f'"{fi_cat}"'})
-        r1 = requests.get(db[1], params={'orderBy': '"Final_Incident_Category"', 'equalTo': f'"{fi_cat}"'})
+        r0, r1 = ez_download({'orderBy': '"Final_Incident_Category"', 'equalTo': f'"{fi_cat}"'})
     elif loc_type:
-        r0 = requests.get(db[0], params={'orderBy': '"Location_Type"', 'equalTo': f'"{loc_type}"'})
-        r1 = requests.get(db[1], params={'orderBy': '"Location_Type"', 'equalTo': f'"{loc_type}"'})
+        r0, r1 = ez_download({'orderBy': '"Location_Type"', 'equalTo': f'"{loc_type}"'})
     elif disp:
-        r0 = requests.get(db[0], params={'orderBy': '"Disposition"', 'equalTo': f'"{disp}"'})
-        r1 = requests.get(db[1], params={'orderBy': '"Disposition"', 'equalTo': f'"{disp}"'})
+        r0, r1 = ez_download({'orderBy': '"Disposition"', 'equalTo': f'"{disp}"'})
     else:
         r0 = requests.get(db[0])
         r1 = requests.get(db[1])
@@ -230,7 +178,7 @@ def search(start_dt=None, end_dt=None, date_rep=None, off_cat=None, off_des=None
     data = r0.json()
     data.update(r1.json())
     df = pd.DataFrame.from_dict(data, orient='index').sort_index()
-    
+
     if start_dt and ("Date_From" in df):
         df = df[df.Date_From >= start_dt]
     if end_dt and ("Date_To" in df):
@@ -249,32 +197,34 @@ def search(start_dt=None, end_dt=None, date_rep=None, off_cat=None, off_des=None
 
     # case insentitive partial match
     if off_des and ("Offense_Description" in df):
-        df = df[df.Offense_Description.str.lower().str.contains(off_des.lower()).fillna(False)]
+        df = df[df.Offense_Description.str.contains(off_des, regex=False, na=False, case=False)]
     if ii_des and ("Initial_Incident_Description" in df):
-        df = df[df.Initial_Incident_Description.str.lower().str.contains(ii_des.lower()).fillna(False)]
+        df = df[df.Initial_Incident_Description.str.contains(ii_des, regex=False, na=False, case=False)]
     if fi_des and ("Final_Incident_Description" in df):
-        df = df[df.Final_Incident_Description.str.lower().str.contains(fi_des.lower()).fillna(False)]
+        df = df[df.Final_Incident_Description.str.contains(fi_des, regex=False, na=False, case=False)]
     if loc and ("Location" in df):
-        df = df[df.Location.str.lower().str.contains(loc.lower()).fillna(False)]
+        df = df[df.Location.str.contains(loc, regex=False, na=False, case=False)]
+
     df = df.fillna('N/A')
     return df.to_dict(orient='index')
 
 
 def search_case_id(case_id):
-    return requests.get(db[1], params={'orderBy': '"CaseID"', 'equalTo': f'"{case_id}"'}).json()
+    r1 = requests.get(db[1], params={'orderBy': '"CaseID"', 'equalTo': f'"{case_id}"'})
+    return r1.json()
 
 
 def search_event(event):
-    event_match = requests.get(f'{db[0]}?orderBy="$key"&equalTo="{event}"').json()
-    event_match.update(requests.get(f'{db[1]}?orderBy="$key"&equalTo="{event}"').json())
+    r0, r1 = ez_download({'orderBy': '"$key"', 'equalTo': f'"{event}"'})
+    event_match = r0.json()
+    event_match.update(r1.json())
     return event_match
 
 
 def number_entries():
     db1 = len(requests.get(db[0]).json())
     db2 = len(requests.get(db[1]).json())
-    total_entries = db1 + db2
-    return total_entries
+    return db1 + db2
 
 
 def last_entry_date_time():
@@ -297,9 +247,7 @@ def delete_case(event):
 
 def update_event(event, caseid=None, dt_from=None, dt_to=None, disp=None, fi_cat=None, fi_des=None, ii_cat=None,
                  ii_des=None, loc=None, loc_type=None, off_cat=None, off_des=None):
-    '''
-    dt_from and df_to must be pd.Timestamps!!!
-    '''
+
     data = {'Disposition': disp, 'Final_Incident_Category': fi_cat, 'Final_Incident_Description': fi_des,
             'Initial_Incident_Category': ii_cat, 'Initial_Incident_Description': ii_des,
             'Location': loc, 'Location_Type': loc_type, 'Offense_Category': off_cat, 'Offense_Description': off_des}
@@ -317,8 +265,7 @@ def update_event(event, caseid=None, dt_from=None, dt_to=None, disp=None, fi_cat
     if dt_to:
         dt_to = pd.Timestamp(dt_to)    # this lets it work on hmtl input
         data['Date_To'] = dt_to.strftime('%Y-%m-%d %H:%M')
-    data = {k: v for k, v in data.items() if v is not None}   # filter out Nones
-    data = {k: v for k, v in data.items() if v != ''}    # filter out empty strings
+    data = {k: v for k, v in data.items() if v}   # filter out Nones and empty strings
     print(data)
     url = url + f'crimes/{event}/.json'   # event cannot be in data dictionary for a PATCH update
     print(url)
@@ -328,3 +275,41 @@ def update_event(event, caseid=None, dt_from=None, dt_to=None, disp=None, fi_cat
 
 
 # update_event('23-12-06-348477', '5555555', None, None, 'CLOSED')
+'''
+OLD FUNCTIONS
+
+def report_crime(crime):
+    """This should be the function that allows a DBA to manually upload a new crime to the db. It can also be used
+    in a loop to process an inputted batch. The input should be structured as a string version of a JSON with all
+    standard parameters complete. The "event" from the pdf should be extracted and used as the primary key"""
+    crime_record = json.loads(crime)
+    del crime_record['SUBMIT']
+    primary_key = crime_record.get("Event")
+    try:
+        if crime_record.get("case") > 1:
+            url = database_urls.get(1)
+    except:
+        url = database_urls.get(0)
+    url = f"{url}/crimes/{primary_key}/.json"
+    response = requests.put(url, json=crime_record)
+    status_code = response.status_code
+    return status_code, print(f'Crime {primary_key} submitted to database!')
+
+
+def report_crime_json(crime):
+    """This should be the function that allows a DBA to manually upload a new crime to the db. It can also be used
+    in a loop to process an inputted batch. The input should be structured as a string version of a JSON with all
+    standard parameters complete. The "event" from the pdf should be extracted and used as the primary key"""
+    #need to convert case, date, and event from string to int, this will allow for simpler queries!!!!
+    crime_record = json.load(crime)
+    primary_key = crime_record.get("event")
+    try:
+        if crime_record.get("case") > 1:
+            url = database_urls.get(1)
+    except:
+        url = database_urls.get(0)
+    url = f"{url}/crimes/{primary_key}/.json"
+    response = requests.put(url, json=crime_record)
+    status_code = response.status_code
+    return status_code, print(f'Crime {primary_key} submitted to database!')
+'''

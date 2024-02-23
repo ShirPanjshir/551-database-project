@@ -19,3 +19,16 @@ Current considerations:
   -explore options for date window entry field pop up thing
   -report a case is running on PATCH function vs PUT. we could use the base_url and include the event as part of the PUT call, so the entire db will not be overwritten. It works fine as is, but we could lose         points for using the wrong function to 'create' something, though functionally there is no difference.
   
+Dan's wishlist:
+Search By Case Number: show something like "case not found" if caseID not found
+Add a "Search By Event ID" section. Proposed layoout: Search By Case Number, Search By Event ID, and Advanced Search (without evenID row)
+Advanced Search: move Date_Reported above Date_From (it's more logical)
+search crime: add drop down menus for categorical variables
+ADD drop down menus for Location_Type
+!!!! FOR ALL DROP DOWN MENUS: add a default BLANK category that returns NONE or "" !!!!!
+report crime: show assigned event id in the confirmation page
+update crime: find a way to separate Event from other text boxes
+
+update crime workflow: 
+enter event id -> if event id == valid -> show original data side by side -> show a new block that says something like "enter text into columns you want to update" -> print the entire updated case with the confrimation message
+!!!CASEID cannot be modified!!!

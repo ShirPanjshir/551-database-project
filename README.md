@@ -32,3 +32,7 @@ update crime: find a way to separate Event from other text boxes
 update crime workflow: 
 enter event id -> if event id == valid -> show original data side by side -> show a new block that says something like "enter text into columns you want to update" -> print the entire updated case with the confrimation message
 !!!CASEID cannot be modified!!!
+
+MIDPOINT FEEDBACK: Regarding distributed storing: Use some hash function to distribute the data. Categorizing is not a good option.
+
+Reason: What if dataset grows enormously huge. Using only 2 table is not a good option in your scenario.

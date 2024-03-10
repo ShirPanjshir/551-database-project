@@ -16,8 +16,20 @@ db = ("https://fir-tutorial-dbda2-default-rtdb.firebaseio.com/crimes.json",
       "https://trojan-force-default-rtdb.firebaseio.com/crimes.json")
 
 
+def hash_func(event):
+    """Uses the report's EventID, which will vary depending on the time submitted (down to seconds). Users have a 50%
+    chance of submitting on an even or odd numbered second. Rapid submissions will cross multiple seconds and also be
+    evenly hashed"""
+    event_hash = event.replace('-', '')
+    event_hash = int(event_hash)
+    event_hash = event_hash % 2
+    return event_hash
+
+
 def batch_process_pdf(pdf_path):
     # 22FEB24 by Dan
+    """This function uses the USC Crime Report PDF as an input and will input the reports into the database
+     as a batch"""
     error = []
     pdf = tabula.read_pdf(pdf_path, pages='all')
     header = ('Date Reported', 'Event #', 'Case #', 'Offense', 'Initial Incident', 'Final Incident',
@@ -102,24 +114,28 @@ def batch_process_pdf(pdf_path):
 
 def report_case(caseid=False, dt_from=None, dt_to=None, off_cat=None, off_des=None, disp=None,
                 ii_cat=None, ii_des=None, fi_cat=None, fi_des=None, loc_type=None, loc=None):
-    '''
+    """ This is the main CREATE function allowing the user to fill fields present in the standard report format
     dt_from and df_to must be pd.Timestamps!!!
-    '''
+    """
     url = db[0]
     data = {'Disposition': disp, 'Final_Incident_Category': fi_cat, 'Final_Incident_Description': fi_des,
             'Initial_Incident_Category': ii_cat, 'Initial_Incident_Description': ii_des,
             'Location': loc, 'Location_Type': loc_type, 'Offense_Category': off_cat, 'Offense_Description': off_des}
-    if caseid == 'yes':
-        url = db[1]
-        r = requests.get(f'{url}?orderBy="CaseID"&limitToLast=1')
-        data['CaseID'] = str(int(list(json.loads(r.text).values())[0]['CaseID']) + 1)
-    else:
-        url = db[0]
 
+    # moving timestamp process up first to generate eventID that is fed to hashfunction
     time = pd.Timestamp.now(tz='US/Pacific')
     data['Date_Reported'] = time.strftime('%Y-%m-%d %H:%M')
     sec = time.hour * 3600 + time.minute * 60 + time.second
     eventID = f"{time.strftime('%y-%m-%d')}-{sec:06}"
+
+    if hash_func(eventID) == 1:  # use hashing function to sort
+        url = db[1]
+    else:
+        url = db[0]
+
+    if caseid == "yes":   # caseid, if selected, can put into either db now
+        r = requests.get(f'{url}?orderBy="CaseID"&limitToLast=1')
+        data['CaseID'] = str(int(list(json.loads(r.text).values())[0]['CaseID']) + 1)
 
     if dt_from:
         dt_from = pd.to_datetime(dt_from, format='%Y-%m-%d %H:%M')
@@ -134,6 +150,7 @@ def report_case(caseid=False, dt_from=None, dt_to=None, off_cat=None, off_des=No
 
 
 def ez_download(p):
+    """Quick download function to save space"""
     r0 = requests.get(db[0], params=p)
     r1 = requests.get(db[1], params=p)
     return r0, r1
@@ -141,7 +158,8 @@ def ez_download(p):
 
 def search(start_dt=None, end_dt=None, date_rep=None, off_cat=None, off_des=None, ii_cat=None,
            ii_des=None, fi_cat=None, fi_des=None, loc_type=None, loc=None, disp=None):
-
+    """Main function used to READ database inventory. Can do partial match and
+    search upon any parameter in the report"""
     if start_dt:
         start_dt = pd.to_datetime(start_dt, format="%y-%m-%d")
         start_dt = start_dt.strftime("%Y-%m-%d")
@@ -210,11 +228,13 @@ def search(start_dt=None, end_dt=None, date_rep=None, off_cat=None, off_des=None
 
 
 def search_case_id(case_id):
+    """Simple search function accepting only CaseID as input"""
     r1 = requests.get(db[1], params={'orderBy': '"CaseID"', 'equalTo': f'"{case_id}"'})
     return r1.json()
 
 
 def search_event(event):
+    """Simple search function accepting only Event Numner as input"""
     r0, r1 = ez_download({'orderBy': '"$key"', 'equalTo': f'"{event}"'})
     event_match = r0.json()
     event_match.update(r1.json())
@@ -222,12 +242,14 @@ def search_event(event):
 
 
 def number_entries():
+    """Returns the number of entries in the database for landing page"""
     db1 = len(requests.get(db[0]).json())
     db2 = len(requests.get(db[1]).json())
     return db1 + db2
 
 
 def last_entry_date_time():
+    """Used to calculate last time database updated for display on landing page"""
     db1last = requests.get(f'{db[0]}?orderBy="Date_Reported"')
     db1last = list(json.loads(db1last.text).values())[-1]['Date_Reported']
     db2last = requests.get(f'{db[1]}?orderBy="Date_Reported"')
@@ -240,6 +262,7 @@ def last_entry_date_time():
 
 
 def delete_case(event):
+    """Main function to DELETE content from the database"""
     requests.delete(f'https://fir-tutorial-dbda2-default-rtdb.firebaseio.com/crimes/{event}.json')
     requests.delete(f'https://trojan-force-default-rtdb.firebaseio.com/crimes/{event}.json')
     return f'{event} deleted'
@@ -247,11 +270,12 @@ def delete_case(event):
 
 def update_event(event, caseid=None, dt_from=None, dt_to=None, disp=None, fi_cat=None, fi_des=None, ii_cat=None,
                  ii_des=None, loc=None, loc_type=None, off_cat=None, off_des=None):
-
-    data = {'Disposition': disp, 'Final_Incident_Category': fi_cat, 'Final_Incident_Description': fi_des,
+    """Main function to UPDATE content"""
+    data = {'CaseID': caseid, 'Disposition': disp, 'Final_Incident_Category': fi_cat, 'Final_Incident_Description': fi_des,
             'Initial_Incident_Category': ii_cat, 'Initial_Incident_Description': ii_des,
             'Location': loc, 'Location_Type': loc_type, 'Offense_Category': off_cat, 'Offense_Description': off_des}
-    if caseid:
+    # updated to find via hash
+    if hash_func(event) == 1:
         url = database_urls[1]
     else:
         url = database_urls[0]
@@ -313,3 +337,4 @@ def report_crime_json(crime):
     status_code = response.status_code
     return status_code, print(f'Crime {primary_key} submitted to database!')
 '''
+

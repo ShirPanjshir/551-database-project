@@ -27,7 +27,7 @@ def hash_func(event):
 
 
 def batch_process_pdf(pdf_path):
-    # 22FEB24 by Dan
+    # 22FEB24 by Dan - need to update to incorporate hash_func
     """This function uses the USC Crime Report PDF as an input and will input the reports into the database
      as a batch"""
     error = []

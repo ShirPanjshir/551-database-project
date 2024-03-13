@@ -11,11 +11,12 @@ from database import number_entries
 from database import last_entry_date_time
 from database import delete_case
 from database import update_event
+import pandas as pd
 import json
 
 app = Flask(__name__)
 
-CATEGORIES = {'ADMINISTRATIVE', 'ALARM RESPONSE', 'ALCOHOL', 'ARSON', 'ASSAULT', 'ASSAULT-OTHER',
+CATEGORIES = {'', 'ADMINISTRATIVE', 'ALARM RESPONSE', 'ALCOHOL', 'ARSON', 'ASSAULT', 'ASSAULT-OTHER',
               'BATTERY', 'BURGLARY', 'BURGLARY-MOTOR VEHICLE', 'CRIMINAL THREATS', 'DEATH', 'DISORDERLY CONDUCT',
               'DISTURBANCE', 'DOMESTIC VIOLENCE', 'EH&S', 'EXTORTION', 'FIRE', 'FRAUD',
               'HARASSMENT', 'HATE', 'HOMELAND SECURITY', 'HOSPITAL', 'INCIDENT', 'LA MUNICIPAL CODE',
@@ -23,14 +24,14 @@ CATEGORIES = {'ADMINISTRATIVE', 'ALARM RESPONSE', 'ALCOHOL', 'ARSON', 'ASSAULT',
               'ROBBERY', 'SERVICE', 'SEX OFFENSE', 'SUICIDE', 'THEFT-GRAND', 'THEFT-MOTOR VEHICLE',
               'THEFT-PETTY', 'THEFT-TRICK', 'TRAFFIC', 'TRESPASS', 'VANDALISM', 'VEHICLE CODE', 'WARRANT', 'WEAPONS'}
 
-DISPOSITIONS = {'ADVISED & COMPLIED', 'ADVISED OF 602 PC & RELEASED', 'CANCELLED EVENT', 'CLOSED',
+DISPOSITIONS = {'', 'ADVISED & COMPLIED', 'ADVISED OF 602 PC & RELEASED', 'CANCELLED EVENT', 'CLOSED',
                 'Cleared Arrest', 'Cleared Other', 'Cleared by Exceptional Means', 'FIELD INTERVIEW & RELEASE',
                 'Hold Over', 'Inactive Investigation', 'Investigation Continued', 'LAFD RESPONDING & WILL HANDLE',
                 'LAPD ON SCENE & WILL HANDLE', 'NO CRIME OCCURRED; NO REPORT TAKEN', 'Open', 'PENDING INVESTIGATION',
                 'REPORT TAKEN', 'REQUEST COMPLETED', 'RESOLVED UPON ARRIVAL', 'TRANSPORTED BY LAFD PARAMEDICS',
                 'UNABLE TO LOCATE - GONE ON ARRIVAL', 'Void'}
 
-LOCATION_TYPES = {'Non-campus building or property', 'Non-reportable location', 'On Campus',
+LOCATION_TYPES = {'', 'Non-campus building or property', 'Non-reportable location', 'On Campus',
                   'On Campus - Residential Facility', 'Public property'}
 
 
@@ -50,7 +51,8 @@ def show_crime_data(id):
 
 @app.route("/search")
 def search_index():
-    return render_template('search.html', results='')
+    return render_template('search.html', results='', categories=CATEGORIES,
+                           dispositions=DISPOSITIONS, loc_types=LOCATION_TYPES)
 
 
 @app.route('/results')
@@ -96,7 +98,7 @@ def crime_report_page_admin():
     print(input_password)
     if input_password == 'PLEASE':
         return render_template('reportacrime.html', password=input_password, categories=CATEGORIES,
-                               dispositions=DISPOSITIONS)
+                               dispositions=DISPOSITIONS, loc_types=LOCATION_TYPES)
     else:
         return render_template('magicword.html')
 
@@ -120,7 +122,10 @@ def report_a_crime(id):
     report_case(decision, date_from, date_to, offense_category, offense_description, disposition,
                 initial_incident_category, initial_incident_description, final_incident_category,
                 final_incident_description, location_type, location)
-    return render_template('crimes_submitted.html', crimes=data)  #UPDATE REQUIRED on c_s.html
+    time = pd.Timestamp.now(tz='US/Pacific')
+    sec = time.hour * 3600 + time.minute * 60 + time.second
+    eventid = f"{time.strftime('%y-%m-%d')}-{sec:06}"
+    return render_template('crimes_submitted.html', crimes=data, eventid=eventid)
 
 
 @app.route("/deletecase")

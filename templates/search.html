@@ -6,25 +6,46 @@
     <title>Database Search</title>
     <style>
         table, th, td {border: 1px solid black;}
+        .search-container {display: flex; background-color: #FF7f7f;}
+        .search-form {flex: 1;}
+        .Advanced-Search {background-color: #D4af37;}
     </style>
 </head>
 <body>
 <button onclick="window.location.href='/';">HOME </button>
+    <div class="search-container">
+  <div class="search-form">
     <h1>Search By Case Number</h1>
     <form action="/results" method="GET">
-        <input type="text" name="query" placeholder='Enter CaseID Number'>
-        <button type="submit">Search</button>
+      <input type="text" name="query" placeholder="Enter CaseID Number">
+      <button type="submit">Search for Case</button>
     </form>
+  </div>
+  <div class="search-form">
+    <h1>Search By Event Number</h1>
+    <form action="/results" method="GET">
+      <input type="text" name="Event" placeholder="NN-NN-NN-NNNNNN">
+      <button type="submit">Search for Event</button>
+    </form>
+  </div>
+</div>
 
 <br>
-
+<div class="Advanced-Search">
 <h1>Advanced Search</h1>
 <div id="form-container">
     <form action="/results">
+<!--        <div class="form-row">-->
+<!--            <div class="form-cell">-->
+<!--                <label for="Event">Event</label>-->
+<!--                    <input type="text" name="Event" placeholder="NN-NN-NN-NNNNNN">-->
+<!--            </div>-->
+<!--        </div>-->
+
         <div class="form-row">
             <div class="form-cell">
-                <label for="Event">Event</label>
-                    <input type="text" name="Event" placeholder="NN-NN-NN-NNNNNN">
+                <label for="Date_Reported">Date_Reported</label>
+                    <input type="text" name="Date_Reported" placeholder="YY-MM-DD">
             </div>
         </div>
 
@@ -35,12 +56,6 @@
                 </div>
         </div>
 
-        <div class="form-row">
-            <div class="form-cell">
-                <label for="Date_Reported">Date_Reported</label>
-                    <input type="text" name="Date_Reported" placeholder="YY-MM-DD">
-            </div>
-        </div>
 
         <div class="form-row">
             <div class="form-cell">
@@ -52,7 +67,11 @@
         <div class="form-row">
             <div class="form-cell">
                 <label for="Disposition">Disposition</label>
-                    <input type="text" name="Disposition" placeholder="STRING">
+                    <select name="Disposition">
+                        {% for disposition in dispositions %}
+                        <option value="{{ disposition }}">{{ disposition }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
         </div>
 
@@ -94,14 +113,22 @@
         <div class="form-row">
             <div class="form-cell">
                 <label for="Location_Type">Location_Type</label>
-                    <input type="text" name="Location_Type" placeholder="STRING">
+                    <select name="Location Type">
+                        {% for type in loc_types %}
+                        <option value="{{ type }}">{{ type }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
         </div>
 
         <div class="form-row">
             <div class="form-cell">
                 <label for="Offense_Category">Offense_Category</label>
-                    <input type="text" name="Offense_Category" placeholder="STRING">
+                    <select name="Offense_Category">
+                        {% for category in categories %}
+                        <option value="{{ category }}">{{ category }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
         </div>
 
@@ -114,6 +141,7 @@
     <br>
         <button type="submit" name="Advanced Search">Advanced Search</button>
 </form>
+</div>
 </div>
     <br>
     {% if results %}
@@ -158,6 +186,8 @@
     {% endfor %}
     </tbody>
 </table>
+    {% else %}
+        <H1> No Results Found</H1>
     {% endif %}
 </div>
 </body>

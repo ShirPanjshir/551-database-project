@@ -129,7 +129,11 @@
         <div class="form-row">
             <div class="form-cell">
                 <label for="Location_Type">Location_Type</label>
-                    <input type="text" name="Location_Type" placeholder="STRING">
+                    <select name="Location Type">
+                        {% for type in loc_types %}
+                        <option value="{{ type }}">{{ type }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
         </div>
 

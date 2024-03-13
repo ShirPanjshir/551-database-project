@@ -34,5 +34,5 @@ enter event id -> if event id == valid -> show original data side by side -> sho
 !!!CASEID cannot be modified!!!
 
 MIDPOINT FEEDBACK: Regarding distributed storing: Use some hash function to distribute the data. Categorizing is not a good option.
-
 Reason: What if dataset grows enormously huge. Using only 2 table is not a good option in your scenario.
+Hash function based on time entered implemented and works a/o 11MAR24

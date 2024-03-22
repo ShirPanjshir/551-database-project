@@ -129,7 +129,7 @@
         <div class="form-row">
             <div class="form-cell">
                 <label for="Location_Type">Location_Type</label>
-                    <select name="Location Type">
+                    <select name="Location_Type">
                         {% for type in loc_types %}
                         <option value="{{ type }}">{{ type }}</option>
                         {% endfor %}
@@ -195,14 +195,22 @@
         <div class="form-row">
             <div class="form-cell">
                 <label for="Disposition">Disposition</label>
-                    <input type="text" name="Disposition" placeholder="STRING">
+                    <select name="Disposition">
+                        {% for disposition in dispositions %}
+                        <option value="{{ disposition }}">{{ disposition }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
         </div>
 
         <div class="form-row">
             <div class="form-cell">
                 <label for="Final_Incident_Category">Final_Incident_Category</label>
-                    <input type="text" name="Final_Incident_Category" placeholder="STRING">
+                    <select name="Final_Incident_Category">
+                        {% for category in categories %}
+                        <option value="{{ category }}">{{ category }}</option>
+                        {% endfor %}
+                    </select>
             </div>
         </div>
 
@@ -216,7 +224,11 @@
         <div class="form-row">
             <div class="form-cell">
                 <label for="Initial_Incident_Category">Initial_Incident_Category</label>
-                    <input type="text" name="Initial_Incident_Category" placeholder="STRING">
+                    <select name="Initial_Incident_Category">
+                        {% for category in categories %}
+                        <option value="{{ category }}">{{ category }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
         </div>
 
@@ -237,14 +249,22 @@
         <div class="form-row">
             <div class="form-cell">
                 <label for="Location_Type">Location_Type</label>
-                    <input type="text" name="Location_Type" placeholder="STRING">
+                    <select name="Location_Type">
+                        {% for type in loc_types %}
+                        <option value="{{ type }}">{{ type }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
         </div>
 
         <div class="form-row">
             <div class="form-cell">
                 <label for="Offense_Category">Offense_Category</label>
-                    <input type="text" name="Offense_Category" placeholder="STRING">
+                    <select name="Offense_Category">
+                        {% for category in categories %}
+                        <option value="{{ category }}">{{ category }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
         </div>
 

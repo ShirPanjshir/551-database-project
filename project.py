@@ -2,17 +2,13 @@ from flask import Flask
 from flask import render_template
 from flask import jsonify
 from flask import request
-# from database import report_crime
 from database import search_event
 from database import search_case_id
 from database import search
 from database import report_case
-from database import number_entries
-from database import last_entry_date_time
 from database import delete_case
 from database import update_event
-import pandas as pd
-import json
+
 
 app = Flask(__name__)
 
@@ -37,9 +33,7 @@ LOCATION_TYPES = {'', 'Non-campus building or property', 'Non-reportable locatio
 
 @app.route("/")
 def landing_site():
-    num_entries = number_entries()
-    recent = last_entry_date_time()
-    return render_template('home.html', number_entries=num_entries, recent=recent)
+    return render_template('home.html')
 
 
 @app.route("/crime/<id>")
@@ -58,7 +52,6 @@ def search_index():
 @app.route('/results')
 def results_index():
     query = request.args.get('query')  # this pulls the query value
-    category = request.args.get('category')  # this pulls the selected category and can feed into logic for querying
     event = request.args.get('Event')
     date_from = request.args.get('Date_From')
     date_reported = request.args.get('Date_Reported')
@@ -84,7 +77,8 @@ def results_index():
                              initial_incident_category, initial_incident_description, final_incident_category,
                              final_incident_description, location_type, location, disposition)
     number_found = len(crime_match)
-    return render_template('search.html', results=crime_match, number_found=number_found)
+    return render_template('search.html', results=crime_match, number_found=number_found, categories=CATEGORIES,
+                           dispositions=DISPOSITIONS, loc_types=LOCATION_TYPES)
 
 
 @app.route("/reportacrime")
@@ -109,7 +103,6 @@ def report_a_crime(id):
     decision = data['decision']
     date_from = data['Date_From']
     date_to = data['Date_To']
-    # date_reported = data['Date_Reported'] this is generated
     disposition = data['Disposition']
     final_incident_category = data['Final_Incident_Category']
     final_incident_description = data['Final_Incident_Description']
@@ -119,12 +112,9 @@ def report_a_crime(id):
     location_type = data['Location_Type']
     offense_category = data['Offense_Category']
     offense_description = data['Offense_Description']
-    report_case(decision, date_from, date_to, offense_category, offense_description, disposition,
-                initial_incident_category, initial_incident_description, final_incident_category,
-                final_incident_description, location_type, location)
-    time = pd.Timestamp.now(tz='US/Pacific')
-    sec = time.hour * 3600 + time.minute * 60 + time.second
-    eventid = f"{time.strftime('%y-%m-%d')}-{sec:06}"
+    eventid, status = report_case(decision, date_from, date_to, offense_category, offense_description, disposition,
+                                  initial_incident_category, initial_incident_description, final_incident_category,
+                                  final_incident_description, location_type, location)
     return render_template('crimes_submitted.html', crimes=data, eventid=eventid)
 
 
@@ -160,8 +150,8 @@ def update_event_info():
     offense_description = data['Offense_Description']
     if search_event(event):
         update_event(event, caseid, date_from, date_to, disposition, final_incident_category,
-                     final_incident_description, initial_incident_category, initial_incident_description, location
-                     , location_type, offense_category, offense_description)
+                     final_incident_description, initial_incident_category, initial_incident_description, location,
+                     location_type, offense_category, offense_description)
         print(f'Case with Event Number {event} updated')
         message = f'Case with Event Number {event} updated.'
     else:

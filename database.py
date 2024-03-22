@@ -1,33 +1,24 @@
-import tabula  # must install java
+import tabula
 import warnings
 import pandas as pd
 import numpy as np
 import requests
-import json
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
-# Kyle's links
-database_urls = {0: "https://fir-tutorial-dbda2-default-rtdb.firebaseio.com/",
-                 1: "https://trojan-force-default-rtdb.firebaseio.com/"}
-
-# Dan's links
-db = ("https://fir-tutorial-dbda2-default-rtdb.firebaseio.com/crimes.json",
-      "https://trojan-force-default-rtdb.firebaseio.com/crimes.json")
+database_urls = ("https://fir-tutorial-dbda2-default-rtdb.firebaseio.com/",
+                 "https://trojan-force-default-rtdb.firebaseio.com/")
 
 
 def hash_func(event):
     """Uses the report's EventID, which will vary depending on the time submitted (down to seconds). Users have a 50%
     chance of submitting on an even or odd numbered second. Rapid submissions will cross multiple seconds and also be
     evenly hashed"""
-    event_hash = event.replace('-', '')
-    event_hash = int(event_hash)
-    event_hash = event_hash % 2
-    return event_hash
+    event_hash = event[-1]
+    return int(event_hash) % 2
 
 
 def batch_process_pdf(pdf_path):
-    # 22FEB24 by Dan - need to update to incorporate hash_func
     """This function uses the USC Crime Report PDF as an input and will input the reports into the database
      as a batch"""
     error = []
@@ -46,7 +37,7 @@ def batch_process_pdf(pdf_path):
     df = pd.concat(pdf).reset_index(drop=True)
     df = df.replace(r'\r+|\n+|\t+', ' ', regex=True)
     df['Offense_Category'] = df.Offense.str.split(' -', n=1).str[0]
-    df['Offense_Description'] = df.Offense.str.split(' -', n=1).str[1]    
+    df['Offense_Description'] = df.Offense.str.split(' -', n=1).str[1]
     df.Offense_Description = df.Offense_Description.str.strip()
     df.Offense_Description = df.Offense_Description.str.replace(r"([^ ])(- )", r"\1 - ", regex=True)
     df.Offense_Description = df.Offense_Description.str.replace("Skateboar d", "Skateboard")
@@ -91,21 +82,15 @@ def batch_process_pdf(pdf_path):
     df.CaseID = df.CaseID.astype(str).str.replace(r"\.[0-9]+", "", regex=True)
     df = df.replace(r"[ ]{2,}", " ", regex=True)
     df = df.replace('nan', np.nan)
+    df = df.set_index('EventID').to_dict(orient='index')
 
-    df0 = df[df.CaseID.isnull()].drop(columns='CaseID')
-    dic0 = df0.set_index('EventID').to_dict(orient='index')
-    for i in dic0:
-        dic0[i] = {k: v for k, v in dic0[i].items() if v == v}
-    r0 = requests.patch(f"{db[0]}", json=dic0)
+    for k, v in df.items():
+        url = database_urls[hash_func(k)]
+        data = {i: j for i, j in v.items() if j == j}
+        r = requests.put(f"{url}crimes/{k}.json", json=data)
 
-    df1 = df[~df.CaseID.isnull()]
-    dic1 = df1.set_index('EventID').to_dict(orient='index')
-    for i in dic1:
-        dic1[i] = {k: v for k, v in dic1[i].items() if v == v}
-    r1 = requests.patch(f"{db[1]}", json=dic1)
-
-    if r0.status_code != 200 or r1.status_code != 200:
-        return f"Upload error. DB0 status code {r0.status_code}, DB1 status code {r1.status_code}"
+    if r.status_code != 200:
+        return f"Upload error. Status code {r.status_code}"
     elif error:
         return f"Upload Complete. Failed to process page {error}. Please enter manually."
     else:
@@ -117,7 +102,6 @@ def report_case(caseid=False, dt_from=None, dt_to=None, off_cat=None, off_des=No
     """ This is the main CREATE function allowing the user to fill fields present in the standard report format
     dt_from and df_to must be pd.Timestamps!!!
     """
-    url = db[0]
     data = {'Disposition': disp, 'Final_Incident_Category': fi_cat, 'Final_Incident_Description': fi_des,
             'Initial_Incident_Category': ii_cat, 'Initial_Incident_Description': ii_des,
             'Location': loc, 'Location_Type': loc_type, 'Offense_Category': off_cat, 'Offense_Description': off_des}
@@ -128,14 +112,13 @@ def report_case(caseid=False, dt_from=None, dt_to=None, off_cat=None, off_des=No
     sec = time.hour * 3600 + time.minute * 60 + time.second
     eventID = f"{time.strftime('%y-%m-%d')}-{sec:06}"
 
-    if hash_func(eventID) == 1:  # use hashing function to sort
-        url = db[1]
-    else:
-        url = db[0]
+    url = database_urls[hash_func(eventID)]
 
     if caseid == "yes":   # caseid, if selected, can put into either db now
-        r = requests.get(f'{url}?orderBy="CaseID"&limitToLast=1')
-        data['CaseID'] = str(int(list(json.loads(r.text).values())[0]['CaseID']) + 1)
+        r0, r1 = ez_download({'orderBy': '"CaseID"', 'limitToLast': '1'})
+        r0_latest = int(list(r0.json().values())[0]["CaseID"])
+        r1_latest = int(list(r1.json().values())[0]["CaseID"])
+        data['CaseID'] = str(max(r0_latest, r1_latest) + 1)
 
     if dt_from:
         dt_from = pd.to_datetime(dt_from, format='%Y-%m-%d %H:%M')
@@ -145,14 +128,14 @@ def report_case(caseid=False, dt_from=None, dt_to=None, off_cat=None, off_des=No
         data['Date_To'] = dt_to.strftime('%Y-%m-%d %H:%M')
     data = {k: v for k, v in data.items() if v}
     case = {eventID: data}
-    r = requests.patch(url, json=case)
-    return r.status_code
+    r = requests.patch(f"{url}crimes.json", json=case)
+    return eventID, r.status_code
 
 
-def ez_download(p):
+def ez_download(p=None):
     """Quick download function to save space"""
-    r0 = requests.get(db[0], params=p)
-    r1 = requests.get(db[1], params=p)
+    r0 = requests.get(f"{database_urls[0]}crimes.json", params=p)
+    r1 = requests.get(f"{database_urls[1]}crimes.json", params=p)
     return r0, r1
 
 
@@ -189,8 +172,7 @@ def search(start_dt=None, end_dt=None, date_rep=None, off_cat=None, off_des=None
     elif disp:
         r0, r1 = ez_download({'orderBy': '"Disposition"', 'equalTo': f'"{disp}"'})
     else:
-        r0 = requests.get(db[0])
-        r1 = requests.get(db[1])
+        r0, r1 = ez_download()
 
     # Merge jsons into one df
     data = r0.json()
@@ -229,56 +211,37 @@ def search(start_dt=None, end_dt=None, date_rep=None, off_cat=None, off_des=None
 
 def search_case_id(case_id):
     """Simple search function accepting only CaseID as input"""
-    r1 = requests.get(db[1], params={'orderBy': '"CaseID"', 'equalTo': f'"{case_id}"'})
-    return r1.json()
+    r0, r1 = ez_download({'orderBy': '"CaseID"', 'equalTo': f'"{case_id}"'})
+    result = r0.json()
+    result.update(r1.json())
+    return result
 
 
 def search_event(event):
-    """Simple search function accepting only Event Numner as input"""
-    r0, r1 = ez_download({'orderBy': '"$key"', 'equalTo': f'"{event}"'})
-    event_match = r0.json()
-    event_match.update(r1.json())
-    return event_match
-
-
-def number_entries():
-    """Returns the number of entries in the database for landing page"""
-    db1 = len(requests.get(db[0]).json())
-    db2 = len(requests.get(db[1]).json())
-    return db1 + db2
-
-
-def last_entry_date_time():
-    """Used to calculate last time database updated for display on landing page"""
-    db1last = requests.get(f'{db[0]}?orderBy="Date_Reported"')
-    db1last = list(json.loads(db1last.text).values())[-1]['Date_Reported']
-    db2last = requests.get(f'{db[1]}?orderBy="Date_Reported"')
-    db2last = list(json.loads(db2last.text).values())[-1]['Date_Reported']
-    if db1last > db2last:
-        final_entry_time = db1last
-    else:
-        final_entry_time = db2last
-    return final_entry_time
+    """Simple search function accepting only Event Number as input"""
+    url = database_urls[hash_func(event)]
+    event_match = requests.get(f"{url}crimes.json", params={'orderBy': '"$key"', 'equalTo': f'"{event}"'})
+    return event_match.json()
 
 
 def delete_case(event):
     """Main function to DELETE content from the database"""
-    requests.delete(f'https://fir-tutorial-dbda2-default-rtdb.firebaseio.com/crimes/{event}.json')
-    requests.delete(f'https://trojan-force-default-rtdb.firebaseio.com/crimes/{event}.json')
+    url = database_urls[hash_func(event)]
+    requests.delete(f'{url}crimes/{event}.json')
     return f'{event} deleted'
 
 
 def update_event(event, caseid=None, dt_from=None, dt_to=None, disp=None, fi_cat=None, fi_des=None, ii_cat=None,
                  ii_des=None, loc=None, loc_type=None, off_cat=None, off_des=None):
     """Main function to UPDATE content"""
-    data = {'CaseID': caseid, 'Disposition': disp, 'Final_Incident_Category': fi_cat, 'Final_Incident_Description': fi_des,
+    data = {'CaseID': caseid, 'Disposition': disp,
+            'Final_Incident_Category': fi_cat, 'Final_Incident_Description': fi_des,
             'Initial_Incident_Category': ii_cat, 'Initial_Incident_Description': ii_des,
-            'Location': loc, 'Location_Type': loc_type, 'Offense_Category': off_cat, 'Offense_Description': off_des}
+            'Offense_Category': off_cat, 'Offense_Description': off_des,
+            'Location': loc, 'Location_Type': loc_type}
     # updated to find via hash
-    if hash_func(event) == 1:
-        url = database_urls[1]
-    else:
-        url = database_urls[0]
+
+    url = database_urls[hash_func(event)]
 
     time = pd.Timestamp.now(tz='US/Pacific')
     data['Date_Reported'] = time.strftime('%Y-%m-%d %H:%M')
@@ -289,52 +252,8 @@ def update_event(event, caseid=None, dt_from=None, dt_to=None, disp=None, fi_cat
     if dt_to:
         dt_to = pd.Timestamp(dt_to)    # this lets it work on hmtl input
         data['Date_To'] = dt_to.strftime('%Y-%m-%d %H:%M')
+
     data = {k: v for k, v in data.items() if v}   # filter out Nones and empty strings
-    print(data)
     url = url + f'crimes/{event}/.json'   # event cannot be in data dictionary for a PATCH update
-    print(url)
     r = requests.patch(url, json=data)  # PATCH is for updates
     return r.status_code
-# works on CLI
-
-
-# update_event('23-12-06-348477', '5555555', None, None, 'CLOSED')
-'''
-OLD FUNCTIONS
-
-def report_crime(crime):
-    """This should be the function that allows a DBA to manually upload a new crime to the db. It can also be used
-    in a loop to process an inputted batch. The input should be structured as a string version of a JSON with all
-    standard parameters complete. The "event" from the pdf should be extracted and used as the primary key"""
-    crime_record = json.loads(crime)
-    del crime_record['SUBMIT']
-    primary_key = crime_record.get("Event")
-    try:
-        if crime_record.get("case") > 1:
-            url = database_urls.get(1)
-    except:
-        url = database_urls.get(0)
-    url = f"{url}/crimes/{primary_key}/.json"
-    response = requests.put(url, json=crime_record)
-    status_code = response.status_code
-    return status_code, print(f'Crime {primary_key} submitted to database!')
-
-
-def report_crime_json(crime):
-    """This should be the function that allows a DBA to manually upload a new crime to the db. It can also be used
-    in a loop to process an inputted batch. The input should be structured as a string version of a JSON with all
-    standard parameters complete. The "event" from the pdf should be extracted and used as the primary key"""
-    #need to convert case, date, and event from string to int, this will allow for simpler queries!!!!
-    crime_record = json.load(crime)
-    primary_key = crime_record.get("event")
-    try:
-        if crime_record.get("case") > 1:
-            url = database_urls.get(1)
-    except:
-        url = database_urls.get(0)
-    url = f"{url}/crimes/{primary_key}/.json"
-    response = requests.put(url, json=crime_record)
-    status_code = response.status_code
-    return status_code, print(f'Crime {primary_key} submitted to database!')
-'''
-

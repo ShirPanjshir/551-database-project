@@ -188,6 +188,9 @@
 </table>
     {% else %}
         <H1> No Results Found</H1>
+    {% if warning %}
+        <p> Ensure entries in search fields are formatted properly!<p>
+    {% endif %}
     {% endif %}
 </div>
 </body>

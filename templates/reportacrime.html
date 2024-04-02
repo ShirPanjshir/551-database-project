@@ -15,7 +15,9 @@
     </style>
 
     <button onclick="window.location.href='/';">HOME </button>
-
+{% if warning %}
+    <p> Adjustment not submitted - ensure proper data formatting!</p>
+    {% endif %}
 {% if password != 'PLEASE' %}
 <h1>Admins Only! Enter the Password:</h1>
 <style>
@@ -25,6 +27,7 @@
 
 {% if password == 'PLEASE' %}
 <h1>Make Database Adjustments Below: Create, Update, Delete</h1>
+
     <style>
     body {background-color: #89d0f1}
 </style>
@@ -38,8 +41,10 @@
     </form>
 {% endif %}
 {% if password == 'PLEASE' %}
+
 <div id="form-container">
     <h1> REPORT A CRIME</h1>
+
     <form action="/crime/inputs/<id>">
 <!--        <div class="form-row">-->
 <!--            <div class="form-cell">-->
@@ -51,7 +56,7 @@
         <div class="form-row">
             <div class="form-cell">
                 <label for="AssignCaseID">Assign Case Number?</label>
-                <input id="toggle-on" name="decision" type="radio" value="yes">
+                <input id="toggle-on" name="decision" type="radio" value="yes" checked>
                 <label for="toggle-on">Yes</label>
                 <input id="toggle-off" name="decision" type="radio" value="no">
                 <label for="toggle-off">No</label>

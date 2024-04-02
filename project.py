@@ -30,6 +30,7 @@ DISPOSITIONS = {'', 'ADVISED & COMPLIED', 'ADVISED OF 602 PC & RELEASED', 'CANCE
 LOCATION_TYPES = {'', 'Non-campus building or property', 'Non-reportable location', 'On Campus',
                   'On Campus - Residential Facility', 'Public property'}
 
+WARNING = 'Incorrect input format - please adjust'
 
 @app.route("/")
 def landing_site():
@@ -66,19 +67,24 @@ def results_index():
     offense_category = request.args.get('Offense_Category')
     offense_description = request.args.get('Offense_Description')
     print(date_from)
-    if query:
-        crime_match = search_case_id(query)
-        print(crime_match)
-    elif event:
-        crime_match = search_event(event)
-        print(crime_match)
-    else:
-        crime_match = search(date_from, date_to, date_reported, offense_category, offense_description,
+    try:
+        if query:
+            crime_match = search_case_id(query)
+            print(crime_match)
+        elif event:
+            crime_match = search_event(event)
+            print(crime_match)
+        else:
+            crime_match = search(date_from, date_to, date_reported, offense_category, offense_description,
                              initial_incident_category, initial_incident_description, final_incident_category,
                              final_incident_description, location_type, location, disposition)
-    number_found = len(crime_match)
-    return render_template('search.html', results=crime_match, number_found=number_found, categories=CATEGORIES,
-                           dispositions=DISPOSITIONS, loc_types=LOCATION_TYPES)
+        number_found = len(crime_match)
+        return render_template('search.html', results=crime_match, number_found=number_found,
+                               categories=CATEGORIES, dispositions=DISPOSITIONS, loc_types=LOCATION_TYPES)
+    except:
+        print('Incorrect input format!')
+        return render_template('search.html', results="", categories=CATEGORIES,
+                               dispositions=DISPOSITIONS, loc_types=LOCATION_TYPES, warning=WARNING)
 
 
 @app.route("/reportacrime")
@@ -112,24 +118,31 @@ def report_a_crime(id):
     location_type = data['Location_Type']
     offense_category = data['Offense_Category']
     offense_description = data['Offense_Description']
-    eventid, status = report_case(decision, date_from, date_to, offense_category, offense_description, disposition,
+    try:
+        eventid, status = report_case(decision, date_from, date_to, offense_category, offense_description, disposition,
                                   initial_incident_category, initial_incident_description, final_incident_category,
                                   final_incident_description, location_type, location)
-    return render_template('crimes_submitted.html', crimes=data, eventid=eventid)
-
+        return render_template('crimes_submitted.html', crimes=data, eventid=eventid)
+    except:
+        return render_template('reportacrime.html', password='PLEASE', categories=CATEGORIES,
+                               dispositions=DISPOSITIONS, loc_types=LOCATION_TYPES, warning=WARNING)
 
 @app.route("/deletecase")
 def delete_a_case():
     data = request.args
     event = data['Event']
-    if search_event(event):
-        delete_case(event)
-        print(f'Case with Event Number {event} deleted')
-        message = f'Case with Event Number {event} deleted.'
-    else:
-        print(f'Event Number {event} not in Database, no entries removed.')
-        message = f'Event Number {event} not in Database, no entries removed.'
-    return render_template('crimes_deleted.html', message=message)
+    try:
+        if search_event(event):
+            delete_case(event)
+            print(f'Case with Event Number {event} deleted')
+            message = f'Case with Event Number {event} deleted.'
+        else:
+            print(f'Event Number {event} not in Database, no entries removed.')
+            message = f'Event Number {event} not in Database, no entries removed.'
+        return render_template('crimes_deleted.html', message=message)
+    except:
+        return render_template('reportacrime.html', password='PLEASE', categories=CATEGORIES,
+                               dispositions=DISPOSITIONS, loc_types=LOCATION_TYPES, warning=WARNING)
 
 
 @app.route("/updateevent")
@@ -148,17 +161,20 @@ def update_event_info():
     location_type = data['Location_Type']
     offense_category = data['Offense_Category']
     offense_description = data['Offense_Description']
-    if search_event(event):
-        update_event(event, caseid, date_from, date_to, disposition, final_incident_category,
+    try:
+        if search_event(event):
+            update_event(event, caseid, date_from, date_to, disposition, final_incident_category,
                      final_incident_description, initial_incident_category, initial_incident_description, location,
                      location_type, offense_category, offense_description)
-        print(f'Case with Event Number {event} updated')
-        message = f'Case with Event Number {event} updated.'
-    else:
-        print(f'Event Number {event} not in Database, no entries updated.')
-        message = f'Event Number {event} not in Database, no entries updated.'
-    return render_template('crimes_updated.html', message=message)
-
+            print(f'Case with Event Number {event} updated')
+            message = f'Case with Event Number {event} updated.'
+        else:
+            print(f'Event Number {event} not in Database, no entries updated.')
+            message = f'Event Number {event} not in Database, no entries updated.'
+        return render_template('crimes_updated.html', message=message)
+    except:
+        return render_template('reportacrime.html', password='PLEASE', categories=CATEGORIES,
+                               dispositions=DISPOSITIONS, loc_types=LOCATION_TYPES, warning=WARNING)
 
 if __name__ == "__main__":
     app.run()

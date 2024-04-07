@@ -143,6 +143,7 @@ def search(start_dt=None, end_dt=None, date_rep=None, off_cat=None, off_des=None
            ii_des=None, fi_cat=None, fi_des=None, loc_type=None, loc=None, disp=None):
     """Main function used to READ database inventory. Can do partial match and
     search upon any parameter in the report"""
+    #  test for empty input done on project.py
     if start_dt:
         start_dt = pd.to_datetime(start_dt, format="%y-%m-%d")
         start_dt = start_dt.strftime("%Y-%m-%d")

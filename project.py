@@ -31,6 +31,8 @@ LOCATION_TYPES = {'', 'Non-campus building or property', 'Non-reportable locatio
                   'On Campus - Residential Facility', 'Public property'}
 
 WARNING = 'Incorrect input format - please adjust'
+WARNING2 = 'No inputs detected - please fill out form'
+
 
 @app.route("/")
 def landing_site():
@@ -66,7 +68,6 @@ def results_index():
     location_type = request.args.get('Location_Type')
     offense_category = request.args.get('Offense_Category')
     offense_description = request.args.get('Offense_Description')
-    print(date_from)
     try:
         if query:
             crime_match = search_case_id(query)
@@ -75,6 +76,15 @@ def results_index():
             crime_match = search_event(event)
             print(crime_match)
         else:
+            inputs = [date_from, date_to, date_reported, offense_category, offense_description,
+                             initial_incident_category, initial_incident_description, final_incident_category,
+                             final_incident_description, location_type, location, disposition]
+            if all(thing is '' for thing in inputs):
+                return render_template('search.html', results="", categories=CATEGORIES,
+                                       dispositions=DISPOSITIONS, loc_types=LOCATION_TYPES, warning=WARNING2)
+            if all(thing is None for thing in inputs):
+                return render_template('search.html', results="", categories=CATEGORIES,
+                                       dispositions=DISPOSITIONS, loc_types=LOCATION_TYPES, warning=WARNING2)
             crime_match = search(date_from, date_to, date_reported, offense_category, offense_description,
                              initial_incident_category, initial_incident_description, final_incident_category,
                              final_incident_description, location_type, location, disposition)

@@ -186,5 +186,6 @@ def update_event_info():
         return render_template('reportacrime.html', password='PLEASE', categories=CATEGORIES,
                                dispositions=DISPOSITIONS, loc_types=LOCATION_TYPES, warning=WARNING)
 
+
 if __name__ == "__main__":
     app.run()

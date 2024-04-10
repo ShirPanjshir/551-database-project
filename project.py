@@ -79,10 +79,7 @@ def results_index():
             inputs = [date_from, date_to, date_reported, offense_category, offense_description,
                              initial_incident_category, initial_incident_description, final_incident_category,
                              final_incident_description, location_type, location, disposition]
-            if all(thing is '' for thing in inputs):
-                return render_template('search.html', results="", categories=CATEGORIES,
-                                       dispositions=DISPOSITIONS, loc_types=LOCATION_TYPES, warning=WARNING2)
-            if all(thing is None for thing in inputs):
+            if all(not thing for thing in inputs):
                 return render_template('search.html', results="", categories=CATEGORIES,
                                        dispositions=DISPOSITIONS, loc_types=LOCATION_TYPES, warning=WARNING2)
             crime_match = search(date_from, date_to, date_reported, offense_category, offense_description,

@@ -3,6 +3,7 @@ import warnings
 import pandas as pd
 import numpy as np
 import requests
+import re
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
@@ -212,17 +213,23 @@ def search(start_dt=None, end_dt=None, date_rep=None, off_cat=None, off_des=None
 
 def search_case_id(case_id):
     """Simple search function accepting only CaseID as input"""
-    r0, r1 = ez_download({'orderBy': '"CaseID"', 'equalTo': f'"{case_id}"'})
-    result = r0.json()
-    result.update(r1.json())
-    return result
+    if re.match("^[0-9]{7}$", case_id):
+        r0, r1 = ez_download({'orderBy': '"CaseID"', 'equalTo': f'"{case_id}"'})
+        result = r0.json()
+        result.update(r1.json())
+        return result
+    else:
+        raise Exception
 
 
 def search_event(event):
     """Simple search function accepting only Event Number as input"""
-    url = database_urls[hash_func(event)]
-    event_match = requests.get(f"{url}crimes.json", params={'orderBy': '"$key"', 'equalTo': f'"{event}"'})
-    return event_match.json()
+    if re.match("^[0-9]{2}-[0-9]{2}-[0-9]{2}-[0-9]{6}$", event):
+        url = database_urls[hash_func(event)]
+        event_match = requests.get(f"{url}crimes.json", params={'orderBy': '"$key"', 'equalTo': f'"{event}"'})
+        return event_match.json()
+    else:
+        raise Exception
 
 
 def delete_case(event):

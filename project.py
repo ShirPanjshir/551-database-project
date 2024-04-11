@@ -125,7 +125,7 @@ def report_a_crime(id):
     for p in PARAS[1:]:
         fields[p] = data[p]
     if all(not v for v in fields.values()):
-        return render_template('search.html', results="", warning=MESSAGE_ADV_EMPTY, **DROP_DOWNS)
+        return render_template('reportacrime.html', password='PLEASE', **DROP_DOWNS, warning=MESSAGE_ADV_EMPTY)
     fields['caseid'] = data['decision']
     status = report_case(**fields)
     if status == "DTERROR":

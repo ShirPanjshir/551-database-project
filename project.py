@@ -191,7 +191,7 @@ def update_event_info():
     if empty:
         message, error = MESSAGE_ADV_EMPTY, True
 
-    if (not error) and (not empty):
+    if not error:
         status = update_event(**fields)
         if status == 200:
             message = f"Case with Event Number {fields['event']} updated."

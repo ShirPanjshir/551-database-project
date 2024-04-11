@@ -59,14 +59,14 @@
   <div class="search-form">
     <h1>Search By Case Number</h1>
     <form action="/results" method="GET">
-      <input type="text" name="query" placeholder="Enter CaseID Number">
+      <input type="text" name="caseid" placeholder="Enter a seven-digit CaseID Number">
       <button type="submit">Search for Case</button>
     </form>
   </div>
   <div class="search-form">
     <h1>Search By Event Number</h1>
     <form action="/results" method="GET">
-      <input type="text" name="Event" placeholder="NN-NN-NN-NNNNNN">
+      <input type="text" name="event" placeholder="NN-NN-NN-NNNNNN">
       <button type="submit">Search for Event</button>
     </form>
   </div>
@@ -86,30 +86,30 @@
 
         <div class="form-row">
             <div class="form-cell">
-                <label for="Date_Reported">Date_Reported</label>
-                    <input type="text" name="Date_Reported" placeholder="YY-MM-DD">
+                <label for="date_rep">Date Reported</label>
+                    <input type="text" name="date_rep" placeholder="YYYY-MM-DD">
             </div>
         </div>
 
         <div class="form-row">
             <div class="form-cell">
-                <label for="Date_From">Date_From</label>
-                    <input type="text" name="Date_From" placeholder="YY-MM-DD">
+                <label for="start_dt">Date From</label>
+                    <input type="text" name="start_dt" placeholder="YYYY-MM-DD">
                 </div>
         </div>
 
 
         <div class="form-row">
             <div class="form-cell">
-                <label for="Date_To">Date_To</label>
-                    <input type="text" name="Date_To" placeholder="YY-MM-DD">
+                <label for="end_dt">Date To</label>
+                    <input type="text" name="end_dt" placeholder="YYYY-MM-DD">
                 </div>
         </div>
 
         <div class="form-row">
             <div class="form-cell">
-                <label for="Offense_Category">Offense_Category</label>
-                    <select name="Offense_Category">
+                <label for="off_cat">Offense Category</label>
+                    <select name="off_cat">
                         {% for category in categories %}
                         <option value="{{ category }}">{{ category }}</option>
                         {% endfor %}
@@ -119,15 +119,15 @@
 
         <div class="form-row">
             <div class="form-cell">
-                <label for="Offense_Description">Offense_Description</label>
-                    <input type="text" name="Offense_Description" placeholder="STRING">
+                <label for="off_des">Offense Description</label>
+                    <input type="text" name="off_des" placeholder="STRING">
                 </div>
         </div>
 
         <div class="form-row">
             <div class="form-cell">
-                <label for="Initial_Incident_Category">Initial_Incident_Category</label>
-                    <select name="Initial_Incident_Category">
+                <label for="ii_cat">Initial Incident Category</label>
+                    <select name="ii_cat">
                         {% for category in categories %}
                         <option value="{{ category }}">{{ category }}</option>
                         {% endfor %}
@@ -137,15 +137,15 @@
 
         <div class="form-row">
             <div class="form-cell">
-                <label for="Initial_Incident_Description">Initial_Incident_Description</label>
-                    <input type="text" name="Initial_Incident_Description" placeholder="STRING">
+                <label for="ii_des">Initial Incident Description</label>
+                    <input type="text" name="ii_des" placeholder="STRING">
                 </div>
         </div>
 
         <div class="form-row">
             <div class="form-cell">
-                <label for="Final_Incident_Category">Final_Incident_Category</label>
-                    <select name="Final_Incident_Category">
+                <label for="fi_cat">Final Incident Category</label>
+                    <select name="fi_cat">
                         {% for category in categories %}
                         <option value="{{ category }}">{{ category }}</option>
                         {% endfor %}
@@ -155,15 +155,15 @@
 
         <div class="form-row">
             <div class="form-cell">
-                <label for="Final_Incident_Description">Final_Incident_Description</label>
-                    <input type="text" name="Final_Incident_Description" placeholder="STRING">
+                <label for="fi_des">Final Incident Description</label>
+                    <input type="text" name="fi_des" placeholder="STRING">
                 </div>
         </div>
 
         <div class="form-row">
             <div class="form-cell">
-                <label for="Location_Type">Location_Type</label>
-                    <select name="Location_Type">
+                <label for="loc_type">Location Type</label>
+                    <select name="loc_type">
                         {% for type in loc_types %}
                         <option value="{{ type }}">{{ type }}</option>
                         {% endfor %}
@@ -173,15 +173,15 @@
 
         <div class="form-row">
             <div class="form-cell">
-                <label for="Location">Location</label>
-                    <input type="text" name="Location" placeholder="STRING">
+                <label for="loc">Location</label>
+                    <input type="text" name="loc" placeholder="STRING">
                 </div>
         </div>
 
         <div class="form-row">
             <div class="form-cell">
-                <label for="Disposition">Disposition</label>
-                    <select name="Disposition">
+                <label for="disp">Disposition</label>
+                    <select name="disp">
                         {% for disposition in dispositions %}
                         <option value="{{ disposition }}">{{ disposition }}</option>
                         {% endfor %}
@@ -202,18 +202,18 @@
     <tr>
         <th style="width:5%">Event</th>
         <th style="width:5%">CaseID</th>
-        <th style="width:5%">Date_From</th>
         <th style="width:5%">Date_Reported</th>
+        <th style="width:5%">Date_From</th>
         <th style="width:5%">Date_To</th>
-        <th style="width:10%">Disposition</th>
-        <th style="width:5%">Final_Incident_Category</th>
-        <th style="width:10%">Final_Incident_Description</th>
-        <th style="width:5%">Initial_Incident_Category</th>
-        <th style="width:10%">Initial_Incident_Description</th>
-        <th style="width:5%">Location</th>
-        <th style="width:5%">Location_Type</th>
         <th style="width:5%">Offense_Category</th>
         <th style="width:5%">Offense_Description</th>
+        <th style="width:5%">Initial_Incident_Category</th>
+        <th style="width:10%">Initial_Incident_Description</th>
+        <th style="width:5%">Final_Incident_Category</th>
+        <th style="width:10%">Final_Incident_Description</th>
+        <th style="width:5%">Location</th>
+        <th style="width:5%">Location_Type</th>
+        <th style="width:10%">Disposition</th>
     </tr>
     </thead>
     <tbody>

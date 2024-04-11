@@ -98,7 +98,7 @@ def batch_process_pdf(pdf_path):
         return "Upload Complete."
 
 
-def report_case(caseid=False, dt_from=None, dt_to=None, off_cat=None, off_des=None, disp=None,
+def report_case(caseid=False, start_dt=None, end_dt=None, off_cat=None, off_des=None, disp=None,
                 ii_cat=None, ii_des=None, fi_cat=None, fi_des=None, loc_type=None, loc=None):
     """ This is the main CREATE function allowing the user to fill fields present in the standard report format
     dt_from and df_to must be pd.Timestamps!!!
@@ -121,16 +121,28 @@ def report_case(caseid=False, dt_from=None, dt_to=None, off_cat=None, off_des=No
         r1_latest = int(list(r1.json().values())[0]["CaseID"])
         data['CaseID'] = str(max(r0_latest, r1_latest) + 1)
 
-    if dt_from:
-        dt_from = pd.to_datetime(dt_from, format='%Y-%m-%d %H:%M')
-        data['Date_From'] = dt_from.strftime('%Y-%m-%d %H:%M')
-    if dt_to:
-        dt_to = pd.to_datetime(dt_to, format='%Y-%m-%d %H:%M')
-        data['Date_To'] = dt_to.strftime('%Y-%m-%d %H:%M')
+    if start_dt:
+        try:
+            start_dt = pd.to_datetime(start_dt, format='%Y-%m-%d %H:%M')
+            data['Date_From'] = start_dt.strftime('%Y-%m-%d %H:%M')
+        except ValueError:
+            return "DTERROR"
+    if end_dt:
+        try:
+            end_dt = pd.to_datetime(end_dt, format='%Y-%m-%d %H:%M')
+            data['Date_To'] = end_dt.strftime('%Y-%m-%d %H:%M')
+        except ValueError:
+            return "DTERROR"
+    if start_dt and end_dt:
+        if end_dt < start_dt:
+            return "DTCONFLICT"
     data = {k: v for k, v in data.items() if v}
     case = {eventID: data}
     r = requests.patch(f"{url}crimes.json", json=case)
-    return eventID, r.status_code
+    if r.status_code == 200:
+        return eventID
+    else:
+        r.status_code
 
 
 def ez_download(p=None):
@@ -146,15 +158,18 @@ def search(start_dt=None, end_dt=None, date_rep=None, off_cat=None, off_des=None
     search upon any parameter in the report"""
     #  test for empty input done on project.py
     if start_dt:
-        start_dt = pd.to_datetime(start_dt, format="%y-%m-%d")
+        start_dt = pd.to_datetime(start_dt, format="%Y-%m-%d")
         start_dt = start_dt.strftime("%Y-%m-%d")
     if end_dt:
-        end_dt = pd.to_datetime(end_dt, format="%y-%m-%d")
+        end_dt = pd.to_datetime(end_dt, format="%Y-%m-%d")
         end_dt = end_dt + pd.Timedelta(days=1)
         end_dt = end_dt.strftime("%Y-%m-%d")
+    if start_dt and end_dt:
+        if start_dt > end_dt:
+            return "DTCONFLICT"
     # Pick one filter and download data
     if date_rep:
-        date_rep = pd.to_datetime(date_rep, format="%y-%m-%d")
+        date_rep = pd.to_datetime(date_rep, format="%Y-%m-%d")
         next = date_rep + pd.Timedelta(days=1)
         date_rep = date_rep.strftime("%Y-%m-%d")
         next = next.strftime("%Y-%m-%d")
@@ -219,7 +234,7 @@ def search_case_id(case_id):
         result.update(r1.json())
         return result
     else:
-        raise Exception
+        raise ValueError
 
 
 def search_event(event):
@@ -229,7 +244,7 @@ def search_event(event):
         event_match = requests.get(f"{url}crimes.json", params={'orderBy': '"$key"', 'equalTo': f'"{event}"'})
         return event_match.json()
     else:
-        raise Exception
+        raise ValueError
 
 
 def delete_case(event):
@@ -239,7 +254,7 @@ def delete_case(event):
     return f'{event} deleted'
 
 
-def update_event(event, caseid=None, dt_from=None, dt_to=None, disp=None, fi_cat=None, fi_des=None, ii_cat=None,
+def update_event(event, caseid=None, start_dt=None, end_dt=None, disp=None, fi_cat=None, fi_des=None, ii_cat=None,
                  ii_des=None, loc=None, loc_type=None, off_cat=None, off_des=None):
     """Main function to UPDATE content"""
     data = {'CaseID': caseid, 'Disposition': disp,
@@ -248,18 +263,42 @@ def update_event(event, caseid=None, dt_from=None, dt_to=None, disp=None, fi_cat
             'Offense_Category': off_cat, 'Offense_Description': off_des,
             'Location': loc, 'Location_Type': loc_type}
     # updated to find via hash
+    if caseid:
+        try:
+            result = search_case_id(caseid)
+        except ValueError:
+            return "IDERROR"
+        if result:
+            return "IDCONFLICT"
 
     url = database_urls[hash_func(event)]
-
+    old = requests.get(f"{url}crimes/{event}.json").json()
+    old_from = old.get('Date_From', '')
+    old_to = old.get('Date_To', '')
     time = pd.Timestamp.now(tz='US/Pacific')
     data['Date_Reported'] = time.strftime('%Y-%m-%d %H:%M')
 
-    if dt_from:
-        dt_from = pd.Timestamp(dt_from)  # this lets it work on hmtl input
-        data['Date_From'] = dt_from.strftime('%Y-%m-%d %H:%M')
-    if dt_to:
-        dt_to = pd.Timestamp(dt_to)    # this lets it work on hmtl input
-        data['Date_To'] = dt_to.strftime('%Y-%m-%d %H:%M')
+    if start_dt:
+        try:
+            start_dt = pd.to_datetime(start_dt, format="%Y-%m-%d %H:%M")  # this lets it work on hmtl input
+            data['Date_From'] = start_dt.strftime('%Y-%m-%d %H:%M')
+        except ValueError:
+            return "DTERROR"
+    elif old_from:
+        start_dt = pd.to_datetime(old_from, format="%Y-%m-%d %H:%M")
+
+    if end_dt:
+        try:
+            end_dt = pd.to_datetime(end_dt, format="%Y-%m-%d %H:%M")     # this lets it work on hmtl input
+            data['Date_To'] = end_dt.strftime('%Y-%m-%d %H:%M')
+        except ValueError:
+            return "DTERROR"
+    elif old_to:
+        end_dt = pd.to_datetime(old_to, format="%Y-%m-%d %H:%M")
+
+    if start_dt and end_dt:
+        if end_dt < start_dt:
+            return "DTCONFLICT"
 
     data = {k: v for k, v in data.items() if v}   # filter out Nones and empty strings
     url = url + f'crimes/{event}/.json'   # event cannot be in data dictionary for a PATCH update

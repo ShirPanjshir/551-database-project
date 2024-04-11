@@ -14,20 +14,42 @@ Concerns:
 17FEB24- UPLOAD, PDF_UPLOAD, and ALL SEARCH functions working (****very nice***), report_crime swapped report_case: deleted manual event# input and adjusted other parameters to ensure funcitonality- converts to pd.Timestap as function runs.
 22FEB24- UPDATE and DELETE functions working, html now has separate boxes for each function.
 
+10APR24 update log:
+  overall
+    - removed ugly underscores
+    - reordered fields
+  search by case number
+    - emtpy field error message
+    - wrong format error message
+  search by event number
+    - emtpy field error message
+    - wrong format error message
+  advanced search
+    - emtpy field error message if all == ''
+    - change date format from yy-mm-dd to YYYY-MM-DD (same as the admin page)  
+    - wrong date format error message
+    - check date inconsistency (start > end)
+  report
+    - emtpy field error message (at least one field)
+    - wrong date format error message
+    - check date inconsistency (start > end)
+  update
+    - emtpy field error message (at least one field)
+    - wrong date format error message
+    - check date inconsistency (start > end)
+    - checks if caseID has been used
+    - caseID format error message (if caseID)
+  delete
+    - emtpy field error message
+    - wrong format error message
+    - not found error message (shown on the same page. only show the red page if successful)
+    
+
 Current considerations:
   -consider a .lower() on query results so that "CLOSED" and "closed" both have same results
   -explore options for date window entry field pop up thing
   -report a case is running on PATCH function vs PUT. we could use the base_url and include the event as part of the PUT call, so the entire db will not be overwritten. It works fine as is, but we could lose         points for using the wrong function to 'create' something, though functionally there is no difference.
   
-Dan's wishlist:
-Search By Case Number: show something like "case not found" if caseID not found DONE (this is default return)
-Add a "Search By Event ID" section. Proposed layoout: Search By Case Number, Search By Event ID, and Advanced Search (without evenID row) DONE
-Advanced Search: move Date_Reported above Date_From (it's more logical) DONE
-search crime: add drop down menus for categorical variables DONE
-ADD drop down menus for Location_Type DONE
-!!!! FOR ALL DROP DOWN MENUS: add a default BLANK category that returns NONE or "" !!!!! DONE, blank '' option is at top, results in  N/A value on returns DONE
-report crime: show assigned event id in the confirmation page DONE
-update crime: find a way to separate Event from other text boxes DONE
 
 update crime workflow:   this would be nice but its complicated, would have to use the search function and all that. probably a bit much for this project. PASS
 enter event id -> if event id == valid -> show original data side by side -> show a new block that says something like "enter text into columns you want to update" -> print the entire updated case with the confirmation message !!!CASEID cannot be modified!!!

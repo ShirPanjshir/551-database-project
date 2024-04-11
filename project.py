@@ -174,7 +174,7 @@ def update_event_info():
     for p in PARAS[1:]:
         fields[p] = data[p]
     if all(not v for v in fields.values()):
-        empty = True
+        message, error = MESSAGE_ADV_EMPTY, True
 
     fields['event'] = data['Event']
     fields['caseid'] = data['CaseID']
@@ -188,8 +188,6 @@ def update_event_info():
                 message, error = f"Event Number {fields['event']} not in Database, no entries updated.", True
         except ValueError:
             message, error = MESSAGE_EVENT, True
-    if empty:
-        message, error = MESSAGE_ADV_EMPTY, True
 
     if not error:
         status = update_event(**fields)

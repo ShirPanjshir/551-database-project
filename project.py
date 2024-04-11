@@ -122,9 +122,11 @@ def crime_report_page_admin():
 def report_a_crime(id):
     data = request.args
     fields = {}
-    fields['caseid'] = data['decision']
     for p in PARAS[1:]:
         fields[p] = data[p]
+    if all(not v for v in fields.values()):
+        return render_template('search.html', results="", warning=MESSAGE_ADV_EMPTY, **DROP_DOWNS)
+    fields['caseid'] = data['decision']
     status = report_case(**fields)
     if status == "DTERROR":
         return render_template('reportacrime.html', password='PLEASE', **DROP_DOWNS, warning=MESSAGE_DT)
@@ -165,13 +167,17 @@ def delete_a_case():
 
 @app.route("/updateevent")
 def update_event_info():
+    empty = False
     error = False
     data = request.args
     fields = {}
-    fields['event'] = data['Event']
-    fields['caseid'] = data['CaseID']
     for p in PARAS[1:]:
         fields[p] = data[p]
+    if all(not v for v in fields.values()):
+        empty = True
+
+    fields['event'] = data['Event']
+    fields['caseid'] = data['CaseID']
 
     if not fields['event']:
         message, error = MESSAGE_EVENT_NULL, True
@@ -182,8 +188,10 @@ def update_event_info():
                 message, error = f"Event Number {fields['event']} not in Database, no entries updated.", True
         except ValueError:
             message, error = MESSAGE_EVENT, True
+    if empty:
+        message, error = MESSAGE_ADV_EMPTY, True
 
-    if not error:
+    if (not error) and (not empty):
         status = update_event(**fields)
         if status == 200:
             message = f"Case with Event Number {fields['event']} updated."

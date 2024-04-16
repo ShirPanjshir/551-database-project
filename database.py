@@ -304,3 +304,15 @@ def update_event(event, caseid=None, start_dt=None, end_dt=None, disp=None, fi_c
     url = url + f'crimes/{event}/.json'   # event cannot be in data dictionary for a PATCH update
     r = requests.patch(url, json=data)  # PATCH is for updates
     return r.status_code
+
+
+def delete_all():
+    url = database_urls[0] + f'.json'
+    url1 = database_urls[1] + f'.json'
+    user_input = input('Provide authorization code: ')
+    if user_input == '8675309':
+        requests.delete(url)
+        requests.delete(url1)
+        return 'Databases deleted!'
+    else:
+        print("Code not accepted.")

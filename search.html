@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Search</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+<link rel="stylesheet" href="https://cdn.datatables.net/1.10.22/css/jquery.dataTables.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/1.6.4/css/buttons.dataTables.min.css">
+<script src="https://cdn.datatables.net/1.10.22/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/1.6.4/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/1.6.4/js/buttons.flash.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/1.6.4/js/buttons.html5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/1.6.4/js/buttons.print.min.js"></script>
+<script type="text/javascript">
+	$(document).ready(function()
+	{
+	    $('#crimedata').DataTable(
+	    {
+            "lengthMenu": [[10, 25, 50, -1], [10, 25, 50, "All"]],
+	        dom: 'Blfrtip',
+            buttons: [
+                {
+                    extend: 'excelHtml5',
+                    title: 'USC Crime Data CSV',
+                    text:'Export to Excel'
+                },
+                {
+                    extend: 'csvHtml5',
+                    title: 'USC Crime Data CSV',
+                    text: 'Export to CSV'
+                },
+	       ]
+	    });
+
+        $('.btn_pdf').attr("class","btn btn-success");
+
+	} );
+	</script>
+    <style>
+        table, th, td {border: 1px solid black;}
+        .search-container {display: flex; background-color: #FF7f7f;}
+        .search-form {flex: 1;}
+        .Advanced-Search {background-color: #D4af37;}
+    </style>
+</head>
+<body>
+<button onclick="window.location.href='/';">HOME </button>
+    <div class="search-container">
+  <div class="search-form">
+    <h1>Search By Case Number</h1>
+    <form action="/results" method="GET">
+      <input type="text" name="caseid" placeholder="Enter a seven-digit CaseID Number">
+      <button type="submit">Search for Case</button>
+    </form>
+  </div>
+  <div class="search-form">
+    <h1>Search By Event Number</h1>
+    <form action="/results" method="GET">
+      <input type="text" name="event" placeholder="NN-NN-NN-NNNNNN">
+      <button type="submit">Search for Event</button>
+    </form>
+  </div>
+</div>
+
+<br>
+<div class="Advanced-Search">
+<h1>Advanced Search</h1>
+<div id="form-container">
+    <form action="/results">
+<!--        <div class="form-row">-->
+<!--            <div class="form-cell">-->
+<!--                <label for="Event">Event</label>-->
+<!--                    <input type="text" name="Event" placeholder="NN-NN-NN-NNNNNN">-->
+<!--            </div>-->
+<!--        </div>-->
+
+        <div class="form-row">
+            <div class="form-cell">
+                <label for="date_rep">Date Reported</label>
+                    <input type="text" name="date_rep" placeholder="YYYY-MM-DD">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-cell">
+                <label for="start_dt">Date From</label>
+                    <input type="text" name="start_dt" placeholder="YYYY-MM-DD">
+                </div>
+        </div>
+
+
+        <div class="form-row">
+            <div class="form-cell">
+                <label for="end_dt">Date To</label>
+                    <input type="text" name="end_dt" placeholder="YYYY-MM-DD">
+                </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-cell">
+                <label for="off_cat">Offense Category</label>
+                    <select name="off_cat">
+                        {% for category in categories %}
+                        <option value="{{ category }}">{{ category }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-cell">
+                <label for="off_des">Offense Description</label>
+                    <input type="text" name="off_des" placeholder="STRING">
+                </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-cell">
+                <label for="ii_cat">Initial Incident Category</label>
+                    <select name="ii_cat">
+                        {% for category in categories %}
+                        <option value="{{ category }}">{{ category }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-cell">
+                <label for="ii_des">Initial Incident Description</label>
+                    <input type="text" name="ii_des" placeholder="STRING">
+                </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-cell">
+                <label for="fi_cat">Final Incident Category</label>
+                    <select name="fi_cat">
+                        {% for category in categories %}
+                        <option value="{{ category }}">{{ category }}</option>
+                        {% endfor %}
+                    </select>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-cell">
+                <label for="fi_des">Final Incident Description</label>
+                    <input type="text" name="fi_des" placeholder="STRING">
+                </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-cell">
+                <label for="loc_type">Location Type</label>
+                    <select name="loc_type">
+                        {% for type in loc_types %}
+                        <option value="{{ type }}">{{ type }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-cell">
+                <label for="loc">Location</label>
+                    <input type="text" name="loc" placeholder="STRING">
+                </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-cell">
+                <label for="disp">Disposition</label>
+                    <select name="disp">
+                        {% for disposition in dispositions %}
+                        <option value="{{ disposition }}">{{ disposition }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+        </div>
+    <br>
+        <button type="submit" name="Advanced Search">Advanced Search</button>
+</form>
+</div>
+</div>
+    <br>
+    {% if results %}
+<h2>Matching Database Entries: {{ number_found }}</h2>
+
+<table id="crimedata" style="width:50%">
+    <thead style="font-size:18px;">
+    <tr>
+        <th style="width:5%">Event</th>
+        <th style="width:5%">CaseID</th>
+        <th style="width:5%">Date_Reported</th>
+        <th style="width:5%">Date_From</th>
+        <th style="width:5%">Date_To</th>
+        <th style="width:5%">Offense_Category</th>
+        <th style="width:5%">Offense_Description</th>
+        <th style="width:5%">Initial_Incident_Category</th>
+        <th style="width:10%">Initial_Incident_Description</th>
+        <th style="width:5%">Final_Incident_Category</th>
+        <th style="width:10%">Final_Incident_Description</th>
+        <th style="width:5%">Location</th>
+        <th style="width:5%">Location_Type</th>
+        <th style="width:10%">Disposition</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for key, inner_dict in results.items() %}
+    <tr>
+        <td>{{ key }}</td>
+        <td>{{ inner_dict['CaseID'] }}</td>
+        <td>{{ inner_dict['Date_Reported'] }}</td>
+        <td>{{ inner_dict['Date_From'] }}</td>
+        <td>{{ inner_dict['Date_To'] }}</td>
+        <td>{{ inner_dict['Offense_Category'] }}</td>
+        <td>{{ inner_dict['Offense_Description'] }}</td>
+        <td>{{ inner_dict['Initial_Incident_Category'] }}</td>
+        <td>{{ inner_dict['Initial_Incident_Description'] }}</td>
+        <td>{{ inner_dict['Final_Incident_Category'] }}</td>
+        <td>{{ inner_dict['Final_Incident_Description'] }}</td>
+        <td>{{ inner_dict['Location'] }}</td>
+        <td>{{ inner_dict['Location_Type'] }}</td>
+        <td>{{ inner_dict['Disposition'] }}</td>
+
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+    {% else %}
+        <H1> No Results Found</H1>
+    {% if warning %}
+        <p> {{ warning }}</p>
+{% endif %}
+{% endif %}
+</body>
+</html>

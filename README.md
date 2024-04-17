@@ -1,60 +1,28 @@
 # 551-database-project
-551 semester project
-http://3.216.130.143
+USC DSCI 551 Semester Project
+The BDK Distributed Database for USC Public Safety
+*hosted at the link below*
+http://3.216.130.143 
 
-project file will render with Flask
-database will host database interaction commands and datacleaning
-html pages to be rendered by project.py
-
-Needs: Partial Match????? (maybe not), 
-Concerns: 
-
-
-13FEB24- search by CaseID and Event# are working on the page. Need to fix function for search_by_location. 
-14FEB24- Location working
-17FEB24- UPLOAD, PDF_UPLOAD, and ALL SEARCH functions working (****very nice***), report_crime swapped report_case: deleted manual event# input and adjusted other parameters to ensure funcitonality- converts to pd.Timestap as function runs.
-22FEB24- UPDATE and DELETE functions working, html now has separate boxes for each function.
-
-10APR24 update log:
-  overall
-    - removed ugly underscores
-    - reordered fields
-  search by case number
-    - emtpy field error message
-    - wrong format error message
-  search by event number
-    - emtpy field error message
-    - wrong format error message
-  advanced search
-    - emtpy field error message if all == ''
-    - change date format from yy-mm-dd to YYYY-MM-DD (same as the admin page)  
-    - wrong date format error message
-    - check date inconsistency (start > end)
-  report
-    - emtpy field error message (at least one field)
-    - wrong date format error message
-    - check date inconsistency (start > end)
-  update
-    - emtpy field error message (at least one field)
-    - wrong date format error message
-    - check date inconsistency (start > end)
-    - checks if caseID has been used
-    - caseID format error message (if caseID)
-  delete
-    - emtpy field error message
-    - wrong format error message
-    - not found error message (shown on the same page. only show the red page if successful)
+This database was built with Python Flask, HTML, and Google Firebase.
     
+Web interface users are able to query the database via simple or advanced search methods and download their results into a CSV/Excel allowing for subsequent crime analysis.
+Simple: Retrieve a specific entry aia unique case ID number or unique event number.
+Advanced: Via any other feature (12 further available) pertaining to reports, such as: location or disposition.
+Advanced queries are able to be sorted by feature and subsequent filtering via a search bar to fine-tune requests.
+Drop-down menus are available in several fields to allow faster and more efficient searching.
 
-Current considerations:
-  -consider a .lower() on query results so that "CLOSED" and "closed" both have same results
-  -explore options for date window entry field pop up thing
-  -report a case is running on PATCH function vs PUT. we could use the base_url and include the event as part of the PUT call, so the entire db will not be overwritten. It works fine as is, but we could lose         points for using the wrong function to 'create' something, though functionally there is no difference.
-  
+Authorized users (password protected) are also able to create, update+(upsert), and delete individual records. 
+All alterations to the database return the event number to be copied and searched for rapid confirmation of adjustments.
 
-update crime workflow:   this would be nice but its complicated, would have to use the search function and all that. probably a bit much for this project. PASS
-enter event id -> if event id == valid -> show original data side by side -> show a new block that says something like "enter text into columns you want to update" -> print the entire updated case with the confirmation message !!!CASEID cannot be modified!!!
+Database Administrator has ability to bulk upload PDF-type reports to the databases, as well as an option to delete all entries, both via the CLI*.
+    *Requires tabula-py, JPype1, and Java to be installed.
 
-MIDPOINT FEEDBACK: Regarding distributed storing: Use some hash function to distribute the data. Categorizing is not a good option.
-Reason: What if dataset grows enormously huge. Using only 2 table is not a good option in your scenario.
-Hash function based on time entered implemented and works a/o 11MAR24
+Hashing into the databases is conducted upon time-derived, event number to ensure unique entries.
+User-assigned Case numbers are simple increment, based on the most recently used case number, preventing duplicate entries.
+
+Error handling is specific to each action, informing user of specific alteration required to fix improper queries or adjustments, e.g. "Use proper YYYY-MM-DD HH:MM format for query".
+Strict input formatting ensures data integrity, resulting in clean and uniform downloads that facilate advanced analytics immediately after download.
+
+For questions and comments, please contact Kyle W. Parker at kwparker@usc.edu
+FIGHT ON!

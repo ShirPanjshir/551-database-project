@@ -213,18 +213,19 @@
     <tr>
         <td>{{ key }}</td>
         <td>{{ inner_dict['CaseID'] }}</td>
-        <td>{{ inner_dict['Date_From'] }}</td>
         <td>{{ inner_dict['Date_Reported'] }}</td>
+        <td>{{ inner_dict['Date_From'] }}</td>
         <td>{{ inner_dict['Date_To'] }}</td>
-        <td>{{ inner_dict['Disposition'] }}</td>
-        <td>{{ inner_dict['Final_Incident_Category'] }}</td>
-        <td>{{ inner_dict['Final_Incident_Description'] }}</td>
-        <td>{{ inner_dict['Initial_Incident_Category'] }}</td>
-        <td>{{ inner_dict['Initial_Incident_Description'] }}</td>
-        <td>{{ inner_dict['Location'] }}</td>
-        <td>{{ inner_dict['Location_Type'] }}</td>
         <td>{{ inner_dict['Offense_Category'] }}</td>
         <td>{{ inner_dict['Offense_Description'] }}</td>
+        <td>{{ inner_dict['Initial_Incident_Category'] }}</td>
+        <td>{{ inner_dict['Initial_Incident_Description'] }}</td>
+        <td>{{ inner_dict['Final_Incident_Category'] }}</td>
+        <td>{{ inner_dict['Final_Incident_Description'] }}</td>
+        <td>{{ inner_dict['Location'] }}</td>
+        <td>{{ inner_dict['Location_Type'] }}</td>
+        <td>{{ inner_dict['Disposition'] }}</td>
+
     </tr>
     {% endfor %}
     </tbody>

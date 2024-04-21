@@ -7,16 +7,20 @@ import re
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
-database_urls = ("https://fir-tutorial-dbda2-default-rtdb.firebaseio.com/",
-                 "https://trojan-force-default-rtdb.firebaseio.com/")
+DB_URLS = ("https://fir-tutorial-dbda2-default-rtdb.firebaseio.com/",
+           "https://trojan-force-default-rtdb.firebaseio.com/")
+
+TIME_FORMAT = '%Y-%m-%d %H:%M'
+DATE_FORMAT = "%Y-%m-%d"
+ERROR_CODE = 7700
+SUCCESS = 200
 
 
 def hash_func(event):
     """Uses the report's EventID, which will vary depending on the time submitted (down to seconds). Users have a 50%
     chance of submitting on an even or odd numbered second. Rapid submissions will cross multiple seconds and also be
     evenly hashed"""
-    event_hash = event[-1]
-    return int(event_hash) % 2
+    return int(event[-1]) % 2
 
 
 def batch_process_pdf(pdf_path):
@@ -37,23 +41,14 @@ def batch_process_pdf(pdf_path):
     error = [i+1 for i in error]
     df = pd.concat(pdf).reset_index(drop=True)
     df = df.replace(r'\r+|\n+|\t+', ' ', regex=True)
-    df['Offense_Category'] = df.Offense.str.split(' -', n=1).str[0]
-    df['Offense_Description'] = df.Offense.str.split(' -', n=1).str[1]
-    df.Offense_Description = df.Offense_Description.str.strip()
-    df.Offense_Description = df.Offense_Description.str.replace(r"([^ ])(- )", r"\1 - ", regex=True)
-    df.Offense_Description = df.Offense_Description.str.replace("Skateboar d", "Skateboard")
 
-    df['Initial_Incident_Category'] = df['Initial Incident'].str.split(' -', n=1).str[0]
-    df['Initial_Incident_Description'] = df['Initial Incident'].str.split(' -', n=1).str[1]
-    df.Initial_Incident_Description = df.Initial_Incident_Description.str.strip()
-    df.Initial_Incident_Description = df.Initial_Incident_Description.str.replace(r"([^ ])(- )", r"\1 - ", regex=True)
-    df.Initial_Incident_Description = df.Initial_Incident_Description.str.replace("Skateboar d", "Skateboard")
-
-    df['Final_Incident_Category'] = df['Final Incident'].str.split(' -', n=1).str[0]
-    df['Final_Incident_Description'] = df['Final Incident'].str.split(' -', n=1).str[1]
-    df.Final_Incident_Description = df.Final_Incident_Description.str.strip()
-    df.Final_Incident_Description = df.Final_Incident_Description.str.replace(r"([^ ])(- )", r"\1 - ", regex=True)
-    df.Final_Incident_Description = df.Final_Incident_Description.str.replace("Skateboar d", "Skateboard")
+    for i in ['Offense', 'Initial Incident', 'Final Incident']:
+        df[(i.replace(' ', '_')+'_Category')] = df[i].str.split(' -', n=1).str[0]
+        df[(i.replace(' ', '_')+'_Description')] = df[i].str.split(' -', n=1).str[1]
+    for i in ['Offense_Description', 'Initial_Incident_Description', 'Final_Incident_Description']:
+        df[i] = df[i].str.strip()
+        df[i] = df[i].str.replace(r"([^ ])(- )", r"\1 - ", regex=True)
+        df[i] = df[i].str.replace("Skateboar d", "Skateboard")
 
     df['Location_Type'] = df.Location.str.split(' - ', n=1).str[1]
     df.Location = df.Location.str.split(' - ', n=1).str[0]
@@ -65,19 +60,11 @@ def batch_process_pdf(pdf_path):
     df = df.rename(columns={"Date Reported": "Date_Reported", "Date From": "Date_From", "Date To": "Date_To"})
     df = df.rename(columns={"Case #": "CaseID", "Event #": "EventID"})
 
-    df.Date_Reported = df.Date_Reported.str.replace(r" - [A-Z]{3} at ", " ", regex=True)
-    df.Date_Reported = pd.to_datetime(df.Date_Reported, format="%m/%d/%y %H:%M")
-    df.Date_Reported = df.Date_Reported.dt.strftime('%Y-%m-%d %H:%M')
-
-    df.Date_From = df.Date_From.str.replace(r" - [A-Z]{3} at ", " ", regex=True)
-    df.Date_From = df.Date_From.str.replace(r"\..*", "", regex=True)
-    df.Date_From = pd.to_datetime(df.Date_From, format="%m/%d/%y %H:%M")
-    df.Date_From = df.Date_From.dt.strftime('%Y-%m-%d %H:%M')
-
-    df.Date_To = df.Date_To.str.replace(r" - [A-Z]{3} at ", " ", regex=True)
-    df.Date_To = df.Date_To.str.replace(r"\..*", "", regex=True)
-    df.Date_To = pd.to_datetime(df.Date_To, format="%m/%d/%y %H:%M")
-    df.Date_To = df.Date_To.dt.strftime('%Y-%m-%d %H:%M')
+    for i in ['Date_Reported', 'Date_From', 'Date_To']:
+        df[i] = df[i].str.replace(r" - [A-Z]{3} at ", " ", regex=True)
+        df[i] = df[i].str.replace(r"\..*", "", regex=True)
+        df[i] = pd.to_datetime(df[i], format="%m/%d/%y %H:%M")
+        df[i] = df[i].dt.strftime(TIME_FORMAT)
 
     df.CaseID = df.CaseID.replace(r"[^0-9\.]*", np.nan, regex=True)
     df.CaseID = df.CaseID.astype(str).str.replace(r"\.[0-9]+", "", regex=True)
@@ -86,7 +73,7 @@ def batch_process_pdf(pdf_path):
     df = df.set_index('EventID').to_dict(orient='index')
 
     for k, v in df.items():
-        url = database_urls[hash_func(k)]
+        url = DB_URLS[hash_func(k)]
         data = {i: j for i, j in v.items() if j == j}
         r = requests.put(f"{url}crimes/{k}.json", json=data)
 
@@ -109,47 +96,57 @@ def report_case(caseid=False, start_dt=None, end_dt=None, off_cat=None, off_des=
 
     # moving timestamp process up first to generate eventID that is fed to hashfunction
     time = pd.Timestamp.now(tz='US/Pacific')
-    data['Date_Reported'] = time.strftime('%Y-%m-%d %H:%M')
+    data['Date_Reported'] = time.strftime(TIME_FORMAT)
     sec = time.hour * 3600 + time.minute * 60 + time.second
     eventID = f"{time.strftime('%y-%m-%d')}-{sec:06}"
 
-    url = database_urls[hash_func(eventID)]
+    url = DB_URLS[hash_func(eventID)]
 
     if caseid == "yes":   # caseid, if selected, can put into either db now
-        r0, r1 = ez_download({'orderBy': '"CaseID"', 'limitToLast': '1'})
-        r0_latest = int(list(r0.json().values())[0]["CaseID"])
-        r1_latest = int(list(r1.json().values())[0]["CaseID"])
-        data['CaseID'] = str(max(r0_latest, r1_latest) + 1)
+        result, status = ez_download({'orderBy': '"CaseID"', 'limitToLast': '1'})
+        if status != 200:
+            return result, status
+        latest = max([int(v['CaseID']) for v in result.values()])
+        data['CaseID'] = str(latest + 1)
 
     if start_dt:
         try:
-            start_dt = pd.to_datetime(start_dt, format='%Y-%m-%d %H:%M')
-            data['Date_From'] = start_dt.strftime('%Y-%m-%d %H:%M')
+            start_dt = pd.to_datetime(start_dt, format=TIME_FORMAT)
+            data['Date_From'] = start_dt.strftime(TIME_FORMAT)
         except ValueError:
-            return "DTERROR"
+            return "DTERROR", ERROR_CODE
     if end_dt:
         try:
-            end_dt = pd.to_datetime(end_dt, format='%Y-%m-%d %H:%M')
-            data['Date_To'] = end_dt.strftime('%Y-%m-%d %H:%M')
+            end_dt = pd.to_datetime(end_dt, format=TIME_FORMAT)
+            data['Date_To'] = end_dt.strftime(TIME_FORMAT)
         except ValueError:
-            return "DTERROR"
+            return "DTERROR", ERROR_CODE
     if start_dt and end_dt:
         if end_dt < start_dt:
-            return "DTCONFLICT"
+            return "DTCONFLICT", ERROR_CODE
     data = {k: v for k, v in data.items() if v}
     case = {eventID: data}
-    r = requests.patch(f"{url}crimes.json", json=case)
-    if r.status_code == 200:
-        return eventID
-    else:
-        r.status_code
+    try:
+        r = requests.patch(f"{url}crimes.json", json=case)
+        if r.status_code == 200:
+            return eventID, SUCCESS
+    except requests.exceptions.RequestException:
+        pass
+    return "CONNECTIONERROR", ERROR_CODE
 
 
 def ez_download(p=None):
     """Quick download function to save space"""
-    r0 = requests.get(f"{database_urls[0]}crimes.json", params=p)
-    r1 = requests.get(f"{database_urls[1]}crimes.json", params=p)
-    return r0, r1
+    try:
+        r0 = requests.get(f"{DB_URLS[0]}crimes.json", params=p)
+        r1 = requests.get(f"{DB_URLS[1]}crimes.json", params=p)
+        if r0.status_code == 200 and r1.status_code == 200:
+            data = r0.json()
+            data.update(r1.json())
+            return data, SUCCESS
+    except requests.exceptions.RequestException:
+        pass
+    return "CONNECTIONERROR", ERROR_CODE
 
 
 def search(start_dt=None, end_dt=None, date_rep=None, off_cat=None, off_des=None, ii_cat=None,
@@ -158,161 +155,185 @@ def search(start_dt=None, end_dt=None, date_rep=None, off_cat=None, off_des=None
     search upon any parameter in the report"""
     #  test for empty input done on project.py
     if start_dt:
-        start_dt = pd.to_datetime(start_dt, format="%Y-%m-%d")
-        start_dt = start_dt.strftime("%Y-%m-%d")
+        try:
+            start_dt = pd.to_datetime(start_dt, format=DATE_FORMAT)
+        except ValueError:
+            return "DTERROR", ERROR_CODE
     if end_dt:
-        end_dt = pd.to_datetime(end_dt, format="%Y-%m-%d")
-        end_dt = end_dt + pd.Timedelta(days=1)
-        end_dt = end_dt.strftime("%Y-%m-%d")
+        try:
+            end_dt = pd.to_datetime(end_dt, format=DATE_FORMAT)
+        except ValueError:
+            return "DTERROR", ERROR_CODE
+    if date_rep:
+        try:
+            date_rep = pd.to_datetime(date_rep, format=DATE_FORMAT)
+            next = date_rep + pd.Timedelta(days=1)
+            date_rep = date_rep.strftime(DATE_FORMAT)
+            next = next.strftime(DATE_FORMAT)
+        except ValueError:
+            return "DTERROR", ERROR_CODE
     if start_dt and end_dt:
         if start_dt > end_dt:
-            return "DTCONFLICT"
+            return "DTCONFLICT", ERROR_CODE
+    start_dt = start_dt.strftime(DATE_FORMAT)
+    end_dt = end_dt + pd.Timedelta(days=1)
+    end_dt = end_dt.strftime(DATE_FORMAT)
     # Pick one filter and download data
+    map1 = {'Disposition': disp, 'Final_Incident_Category': fi_cat,
+            'Initial_Incident_Category': ii_cat, 'Location_Type': loc_type, 'Offense_Category': off_cat}
+    map2 = {'Final_Incident_Description': fi_des, 'Initial_Incident_Description': ii_des,
+            'Location': loc, 'Offense_Category': off_cat, 'Offense_Description': off_des}
+    map1 = {k: v for k, v in map1.items() if v}
+    map2 = {k: v for k, v in map2.items() if v}
     if date_rep:
-        date_rep = pd.to_datetime(date_rep, format="%Y-%m-%d")
-        next = date_rep + pd.Timedelta(days=1)
-        date_rep = date_rep.strftime("%Y-%m-%d")
-        next = next.strftime("%Y-%m-%d")
-        r0, r1 = ez_download({'orderBy': '"Date_Reported"', 'startAt': f'"{date_rep}"', 'endAt': f'"{next}"'})
+        result, status = ez_download({'orderBy': '"Date_Reported"', 'startAt': f'"{date_rep}"', 'endAt': f'"{next}"'})
     elif start_dt:
-        r0, r1 = ez_download({'orderBy': '"Date_From"', 'startAt': f'"{start_dt}"'})
+        result, status = ez_download({'orderBy': '"Date_From"', 'startAt': f'"{start_dt}"'})
     elif end_dt:
-        r0, r1 = ez_download({'orderBy': '"Date_To"', 'endAt': f'"{end_dt}"'})
-    elif off_cat:
-        r0, r1 = ez_download({'orderBy': '"Offense_Category"', 'equalTo': f'"{off_cat}"'})
-    elif ii_cat:
-        r0, r1 = ez_download({'orderBy': '"Initial_Incident_Category"', 'equalTo': f'"{ii_cat}"'})
-    elif fi_cat:
-        r0, r1 = ez_download({'orderBy': '"Final_Incident_Category"', 'equalTo': f'"{fi_cat}"'})
-    elif loc_type:
-        r0, r1 = ez_download({'orderBy': '"Location_Type"', 'equalTo': f'"{loc_type}"'})
-    elif disp:
-        r0, r1 = ez_download({'orderBy': '"Disposition"', 'equalTo': f'"{disp}"'})
+        result, status = ez_download({'orderBy': '"Date_To"', 'endAt': f'"{end_dt}"'})
+    elif map1:
+        for k, v in map1.items():
+            result, status = ez_download({'orderBy': f'"{k}"', 'equalTo': f'"{v}"'})
+            break
     else:
-        r0, r1 = ez_download()
+        result, status = ez_download()
 
-    # Merge jsons into one df
-    data = r0.json()
-    data.update(r1.json())
-    df = pd.DataFrame.from_dict(data, orient='index').sort_index()
+    if status != 200:
+        return result, status
+
+    df = pd.DataFrame.from_dict(result, orient='index').sort_index()
 
     if start_dt and ("Date_From" in df):
         df = df[df.Date_From >= start_dt]
     if end_dt and ("Date_To" in df):
         df = df[df.Date_To <= end_dt]
     # Categorical filters
-    if off_cat and ("Offense_Category" in df):
-        df = df[df.Offense_Category == off_cat]
-    if ii_cat and ("Initial_Incident_Category" in df):
-        df = df[df.Initial_Incident_Category == ii_cat]
-    if fi_cat and ("Final_Incident_Category" in df):
-        df = df[df.Final_Incident_Category == fi_cat]
-    if loc_type and ("Location_Type" in df):
-        df = df[df.Location_Type == loc_type]
-    if disp and ("Disposition" in df):
-        df = df[df.Disposition == disp]
+    for k, v in map1.items():
+        if k in df:
+            df = df[df[k] == v]
 
     # case insentitive partial match
-    if off_des and ("Offense_Description" in df):
-        df = df[df.Offense_Description.str.contains(off_des, regex=False, na=False, case=False)]
-    if ii_des and ("Initial_Incident_Description" in df):
-        df = df[df.Initial_Incident_Description.str.contains(ii_des, regex=False, na=False, case=False)]
-    if fi_des and ("Final_Incident_Description" in df):
-        df = df[df.Final_Incident_Description.str.contains(fi_des, regex=False, na=False, case=False)]
-    if loc and ("Location" in df):
-        df = df[df.Location.str.contains(loc, regex=False, na=False, case=False)]
+    for k, v in map2.items():
+        if k in df:
+            df = df[df[k].str.contains(v, regex=False, na=False, case=False)]
 
     df = df.fillna('N/A')
-    return df.to_dict(orient='index')
+    return df.to_dict(orient='index'), SUCCESS
 
 
-def search_case_id(case_id):
+def search_case_id(caseid):
     """Simple search function accepting only CaseID as input"""
-    if re.match("^[0-9]{7}$", case_id):
-        r0, r1 = ez_download({'orderBy': '"CaseID"', 'equalTo': f'"{case_id}"'})
-        result = r0.json()
-        result.update(r1.json())
-        return result
+    if not caseid:
+        return 'CASEID_NULL', ERROR_CODE
+    if re.match("^[0-9]{7}$", caseid):
+        return ez_download({'orderBy': '"CaseID"', 'equalTo': f'"{caseid}"'})
     else:
-        raise ValueError
+        return 'IDERROR', ERROR_CODE
 
 
 def search_event(event):
     """Simple search function accepting only Event Number as input"""
+    if not event:
+        return 'EVENT_NULL', ERROR_CODE
     if re.match("^[0-9]{2}-[0-9]{2}-[0-9]{2}-[0-9]{6}$", event):
-        url = database_urls[hash_func(event)]
-        event_match = requests.get(f"{url}crimes.json", params={'orderBy': '"$key"', 'equalTo': f'"{event}"'})
-        return event_match.json()
+        url = DB_URLS[hash_func(event)]
+        try:
+            r = requests.get(f"{url}crimes.json", params={'orderBy': '"$key"', 'equalTo': f'"{event}"'})
+            if r.status_code == 200:
+                return r.json(), SUCCESS
+        except requests.exceptions.RequestException:
+            pass
+        return "CONNECTIONERROR", ERROR_CODE
     else:
-        raise ValueError
+        return 'EVENT', ERROR_CODE
 
 
 def delete_case(event):
     """Main function to DELETE content from the database"""
-    url = database_urls[hash_func(event)]
-    requests.delete(f'{url}crimes/{event}.json')
-    return f'{event} deleted'
+    result, status = search_event(event)
+    if status != 200:
+        return result, status
+    url = DB_URLS[hash_func(event)]
+    if not result:
+        return "NOMATCH", ERROR_CODE
+    try:
+        r = requests.delete(f'{url}crimes/{event}.json')
+        if r.status_code == 200:
+            return "SUCCESS", SUCCESS
+    except requests.exceptions.RequestException:
+        pass
+    return "CONNECTIONERROR", ERROR_CODE
 
 
 def update_event(event, caseid=None, start_dt=None, end_dt=None, disp=None, fi_cat=None, fi_des=None, ii_cat=None,
                  ii_des=None, loc=None, loc_type=None, off_cat=None, off_des=None):
     """Main function to UPDATE content"""
-    data = {'CaseID': caseid, 'Disposition': disp,
+    data = {'CaseID': caseid, 'Disposition': disp, 'Location': loc, 'Location_Type': loc_type,
             'Final_Incident_Category': fi_cat, 'Final_Incident_Description': fi_des,
             'Initial_Incident_Category': ii_cat, 'Initial_Incident_Description': ii_des,
-            'Offense_Category': off_cat, 'Offense_Description': off_des,
-            'Location': loc, 'Location_Type': loc_type}
-    # updated to find via hash
-    if caseid:
-        try:
-            result = search_case_id(caseid)
-        except ValueError:
-            return "IDERROR"
-        if result:
-            return "IDCONFLICT"
+            'Offense_Category': off_cat, 'Offense_Description': off_des}
+    data = {k: v for k, v in data.items() if v}   # filter out Nones and empty strings
 
-    url = database_urls[hash_func(event)]
-    old = requests.get(f"{url}crimes/{event}.json").json()
-    old_from = old.get('Date_From', '')
-    old_to = old.get('Date_To', '')
+    result, status = search_event(event)
+    if status != 200:
+        return result, status
+    if not result:
+        return "NOMATCH", ERROR_CODE
+    result = list(result.values())[0]
+    old_from = result.get('Date_From', '')
+    old_to = result.get('Date_To', '')
+
+    if caseid:
+        result, status = search_case_id(caseid)
+        if status != 200:
+            return result, ERROR_CODE
+        if result:
+            return "IDCONFLICT", ERROR_CODE
+
     time = pd.Timestamp.now(tz='US/Pacific')
-    data['Date_Reported'] = time.strftime('%Y-%m-%d %H:%M')
+    data['Date_Reported'] = time.strftime(TIME_FORMAT)
 
     if start_dt:
         try:
-            start_dt = pd.to_datetime(start_dt, format="%Y-%m-%d %H:%M")  # this lets it work on hmtl input
-            data['Date_From'] = start_dt.strftime('%Y-%m-%d %H:%M')
+            start_dt = pd.to_datetime(start_dt, format=TIME_FORMAT)  # this lets it work on hmtl input
+            data['Date_From'] = start_dt.strftime(TIME_FORMAT)
         except ValueError:
-            return "DTERROR"
+            return "DTERROR", ERROR_CODE
     elif old_from:
-        start_dt = pd.to_datetime(old_from, format="%Y-%m-%d %H:%M")
+        start_dt = pd.to_datetime(old_from, format=TIME_FORMAT)
 
     if end_dt:
         try:
-            end_dt = pd.to_datetime(end_dt, format="%Y-%m-%d %H:%M")     # this lets it work on hmtl input
-            data['Date_To'] = end_dt.strftime('%Y-%m-%d %H:%M')
+            end_dt = pd.to_datetime(end_dt, format=TIME_FORMAT)     # this lets it work on hmtl input
+            data['Date_To'] = end_dt.strftime(TIME_FORMAT)
         except ValueError:
-            return "DTERROR"
+            return "DTERROR", ERROR_CODE
     elif old_to:
-        end_dt = pd.to_datetime(old_to, format="%Y-%m-%d %H:%M")
+        end_dt = pd.to_datetime(old_to, format=TIME_FORMAT)
 
     if start_dt and end_dt:
         if end_dt < start_dt:
-            return "DTCONFLICT"
-
-    data = {k: v for k, v in data.items() if v}   # filter out Nones and empty strings
-    url = url + f'crimes/{event}/.json'   # event cannot be in data dictionary for a PATCH update
-    r = requests.patch(url, json=data)  # PATCH is for updates
-    return r.status_code
+            return "DTCONFLICT", ERROR_CODE
+    url = DB_URLS[hash_func(event)]
+    try:
+        r = requests.patch(f'{url}crimes/{event}/.json', json=data)
+        if r.status_code == 200:
+            return "SUCCESS", SUCCESS
+    except requests.exceptions.RequestException:
+        pass
+    return "CONNECTIONERROR", ERROR_CODE
 
 
 def delete_all():
-    url = database_urls[0] + f'.json'
-    url1 = database_urls[1] + f'.json'
     user_input = input('Provide authorization code: ')
     if user_input == '8675309':
-        requests.delete(url)
-        requests.delete(url1)
+        for i in range(len(DB_URLS)):
+            try:
+                r = requests.delete(f'{DB_URLS[i]}.json')
+                if r.status_code != 200:
+                    return 'Connection issue.'
+            except requests.exceptions.RequestException:
+                return 'Connection issue.'
         return 'Databases deleted!'
     else:
         print("Code not accepted.")

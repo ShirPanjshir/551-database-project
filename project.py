@@ -12,38 +12,43 @@ from database import update_event
 
 app = Flask(__name__)
 
-CATEGORIES = {'', 'ADMINISTRATIVE', 'ALARM RESPONSE', 'ALCOHOL', 'ARSON', 'ASSAULT', 'ASSAULT-OTHER',
+CATEGORIES = ('', 'ADMINISTRATIVE', 'ALARM RESPONSE', 'ALCOHOL', 'ARSON', 'ASSAULT', 'ASSAULT-OTHER',
               'BATTERY', 'BURGLARY', 'BURGLARY-MOTOR VEHICLE', 'CRIMINAL THREATS', 'DEATH', 'DISORDERLY CONDUCT',
-              'DISTURBANCE', 'DOMESTIC VIOLENCE', 'EH&S', 'EXTORTION', 'FIRE', 'FRAUD',
-              'HARASSMENT', 'HATE', 'HOMELAND SECURITY', 'HOSPITAL', 'INCIDENT', 'LA MUNICIPAL CODE',
-              'MOTOR VEHICLE THEFT', 'NARCOTICS', 'OBSCENE ACTIVITY', 'OBSERVATIONS', 'OFFICER STATUS', 'PROPERTY',
-              'ROBBERY', 'SERVICE', 'SEX OFFENSE', 'SUICIDE', 'THEFT-GRAND', 'THEFT-MOTOR VEHICLE',
-              'THEFT-PETTY', 'THEFT-TRICK', 'TRAFFIC', 'TRESPASS', 'VANDALISM', 'VEHICLE CODE', 'WARRANT', 'WEAPONS'}
+              'DISTURBANCE', 'DOMESTIC VIOLENCE', 'EH&S', 'EXTORTION', 'FIRE', 'FRAUD', 'HARASSMENT', 'HATE',
+              'HOMELAND SECURITY', 'HOSPITAL', 'INCIDENT', 'LA MUNICIPAL CODE', 'MOTOR VEHICLE THEFT', 'NARCOTICS',
+              'OBSCENE ACTIVITY', 'OBSERVATIONS', 'OFFICER STATUS', 'PROPERTY', 'ROBBERY', 'SERVICE', 'SEX OFFENSE',
+              'SUICIDE', 'THEFT-GRAND', 'THEFT-MOTOR VEHICLE', 'THEFT-PETTY', 'THEFT-TRICK', 'TRAFFIC', 'TRESPASS',
+              'VANDALISM', 'VEHICLE CODE', 'WARRANT', 'WEAPONS')
 
-DISPOSITIONS = {'', 'ADVISED & COMPLIED', 'ADVISED OF 602 PC & RELEASED', 'CANCELLED EVENT', 'CLOSED',
+DISPOSITIONS = ('', 'ADVISED & COMPLIED', 'ADVISED OF 602 PC & RELEASED', 'CANCELLED EVENT', 'CLOSED',
                 'Cleared Arrest', 'Cleared Other', 'Cleared by Exceptional Means', 'FIELD INTERVIEW & RELEASE',
                 'Hold Over', 'Inactive Investigation', 'Investigation Continued', 'LAFD RESPONDING & WILL HANDLE',
                 'LAPD ON SCENE & WILL HANDLE', 'NO CRIME OCCURRED; NO REPORT TAKEN', 'Open', 'PENDING INVESTIGATION',
                 'REPORT TAKEN', 'REQUEST COMPLETED', 'RESOLVED UPON ARRIVAL', 'TRANSPORTED BY LAFD PARAMEDICS',
-                'UNABLE TO LOCATE - GONE ON ARRIVAL', 'Void'}
+                'UNABLE TO LOCATE - GONE ON ARRIVAL', 'Void')
 
-LOCATION_TYPES = {'', 'Non-campus building or property', 'Non-reportable location', 'On Campus',
-                  'On Campus - Residential Facility', 'Public property'}
+LOCATION_TYPES = ('', 'Non-campus building or property', 'Non-reportable location', 'On Campus',
+                  'On Campus - Residential Facility', 'Public property')
+
+DROP_DOWNS = {'categories': CATEGORIES, 'dispositions': DISPOSITIONS, 'loc_types': LOCATION_TYPES}
 
 PARAS = ('date_rep', 'start_dt', 'end_dt', 'off_cat', 'off_des', 'disp',
          'ii_cat', 'ii_des', 'fi_cat', 'fi_des', 'loc', 'loc_type')
 
-DROP_DOWNS = {'categories': CATEGORIES, 'dispositions': DISPOSITIONS, 'loc_types': LOCATION_TYPES}
+MESSAGE = {'IDERROR': 'Incorrect input format - Case ID must be a seven-digit number.',
+           'IDCONFLICT': 'This Case ID has already been used.',
+           'CASEID_NULL': 'Please enter a CaseID.',
+           'EVENT': 'Incorrect input format - Event Number must follow this format: NN-NN-NN-NNNNNN.',
+           'EVENT_NULL': "Please enter an Event Number.",
+           'ADV_EMPTY': 'Please fill in at least one field.',
+           'DTERROR': 'Incorrect date format or invalid date.',
+           'DTCONFLICT': 'Date From must be earlier than Date To.',
+           'WARNING': 'Incorrect input format - please adjust',
+           'CONNECTIONERROR': "Connection error - Please contact admins.",
+           'NOMATCH': 'Event Number %s not in Database, no entries %s.',
+           'SUCCESS': "Case with Event Number %s %s."}
 
-MESSAGE_CASEID = 'Incorrect input format - Case ID must be a seven-digit number.'
-MESSAGE_CASEID_CONFLICT = 'This Case ID has already been used.'
-MESSAGE_CASEID_NULL = "Please enter a CaseID."
-MESSAGE_EVENT = 'Incorrect input format - Event Number must follow this format: NN-NN-NN-NNNNNN.'
-MESSAGE_EVENT_NULL = "Please enter an Event Number."
-MESSAGE_ADV_EMPTY = 'Please fill in at least one field.'
-MESSAGE_DT = 'Incorrect date format or invalid date.'
-MESSAGE_DT_CONFLICT = 'Date From must be earlier than Date To.'
-WARNING = 'Incorrect input format - please adjust'
+PWD = 'PLEASE'
 
 
 @app.route("/")
@@ -54,7 +59,9 @@ def landing_site():
 @app.route("/crime/<id>")
 def show_crime_data(id):
     """calls a function from database.py that lists all crimes matching the unique event number"""
-    crime_info = search_event(id)
+    crime_info, status = search_event(id)
+    if status != 200:
+        crime_info = MESSAGE[crime_info]
     return jsonify(crime_info)
 
 
@@ -65,42 +72,27 @@ def search_index():
 
 @app.route('/results')
 def results_index():
+    page = 'search.html'
     caseid = request.args.get('caseid')
     event = request.args.get('event')
 
     if caseid is not None:
-        if not caseid:
-            message = MESSAGE_CASEID_NULL
-            return render_template('search.html', results="", warning=message, **DROP_DOWNS)
-        else:
-            try:
-                crime_match = search_case_id(caseid)
-            except ValueError:
-                return render_template('search.html', results="", warning=MESSAGE_CASEID, **DROP_DOWNS)
+        result, status = search_case_id(caseid)
     elif event is not None:
-        if not event:
-            message = MESSAGE_EVENT_NULL
-            return render_template('search.html', results="", warning=message, **DROP_DOWNS)
-        else:
-            try:
-                crime_match = search_event(event)
-            except ValueError:
-                return render_template('search.html', results="", warning=MESSAGE_EVENT, **DROP_DOWNS)
+        result, status = search_event(event)
     else:
         search_filters = {}
         for p in PARAS:
             search_filters[p] = request.args.get(p)
         if all(not v for v in search_filters.values()):
-            return render_template('search.html', results="", warning=MESSAGE_ADV_EMPTY, **DROP_DOWNS)
-        try:
-            crime_match = search(**search_filters)
-        except ValueError:
-            return render_template('search.html', results="", warning=MESSAGE_DT, **DROP_DOWNS)
-        if crime_match == "DTCONFLICT":
-            return render_template('search.html', results="", warning=MESSAGE_DT_CONFLICT, **DROP_DOWNS)
+            return render_template(page, results='', warning=MESSAGE['ADV_EMPTY'], **DROP_DOWNS)
+        result, status = search(**search_filters)
 
-    number_found = len(crime_match)
-    return render_template('search.html', results=crime_match, number_found=number_found, **DROP_DOWNS)
+    if status != 200:
+        message = MESSAGE.get(result, "Unexpected Error.")
+        return render_template(page, results='', warning=message, **DROP_DOWNS)
+    number_found = len(result)
+    return render_template(page, results=result, number_found=number_found, **DROP_DOWNS)
 
 
 @app.route("/reportacrime")
@@ -111,8 +103,7 @@ def crime_report_page():
 @app.route('/reportacrimeadmin')
 def crime_report_page_admin():
     input_password = request.args.get('password')
-    print(input_password)
-    if input_password == 'PLEASE':
+    if input_password == PWD:
         return render_template('reportacrime.html', password=input_password, **DROP_DOWNS)
     else:
         return render_template('magicword.html')
@@ -120,94 +111,60 @@ def crime_report_page_admin():
 
 @app.route("/crime/inputs/<id>")  # uploads data from site to proper database
 def report_a_crime(id):
-    data = request.args
+    page = 'reportacrime.html'
     fields = {}
     for p in PARAS[1:]:
-        fields[p] = data[p]
+        fields[p] = request.args.get(p)
     if all(not v for v in fields.values()):
-        return render_template('reportacrime.html', password='PLEASE', **DROP_DOWNS, warning=MESSAGE_ADV_EMPTY)
-    fields['caseid'] = data['decision']
-    status = report_case(**fields)
-    if status == "DTERROR":
-        return render_template('reportacrime.html', password='PLEASE', **DROP_DOWNS, warning=MESSAGE_DT)
-    elif status == "DTCONFLICT":
-        return render_template('reportacrime.html', password='PLEASE', **DROP_DOWNS, warning=MESSAGE_DT_CONFLICT)
-    elif isinstance(status, int):
-        message = f"Connection Issue. Status code {status}."
-        return render_template('reportacrime.html', password='PLEASE', **DROP_DOWNS, warning=message)
+        return render_template(page, password=PWD, warning=MESSAGE['ADV_EMPTY'], **DROP_DOWNS)
+    fields['caseid'] = request.args.get('decision')
+
+    result, status = report_case(**fields)
+    if status == 200:
+        return render_template('crimes_submitted.html', eventid=result)
     else:
-        return render_template('crimes_submitted.html', eventid=status)
+        message = MESSAGE.get(result, "Unexpected Error.")
+        return render_template(page, password=PWD, warning=message, **DROP_DOWNS)
 
 
 @app.route("/deletecase")
 def delete_a_case():
-    error = False
-    event = request.args['Event']
-
+    page = 'reportacrime.html'
+    event = request.args.get('Event')
     if not event:
-        message, error = MESSAGE_EVENT_NULL, True
-    else:
-        try:
-            match = search_event(event)
-        except ValueError:
-            message, error = MESSAGE_EVENT, True
+        return render_template(page, password=PWD, warning=MESSAGE['EVENT_NULL'], **DROP_DOWNS)
 
-    if not error:
-        if match:
-            delete_case(event)
-            message = f'Case with Event Number {event} deleted.'
+    result, status = delete_case(event)
+    if status == 200:
+        message = MESSAGE[result] % (event, "deleted")
+        return render_template('crimes_updated.html', message=message)
+    else:
+        if result == "NOMATCH":
+            message = MESSAGE[result] % (event, "deleted")
         else:
-            message, error = f'Event Number {event} not in Database, no entries removed.', True
-
-    if not error:
-        return render_template('crimes_deleted.html', message=message)
-    else:
-        return render_template('reportacrime.html', password='PLEASE', warning=message, **DROP_DOWNS)
+            message = MESSAGE.get(result, "Unexpected Error.")
+        return render_template(page, password=PWD, warning=message, **DROP_DOWNS)
 
 
 @app.route("/updateevent")
 def update_event_info():
-    empty = False
-    error = False
-    data = request.args
+    page = 'reportacrime.html'
     fields = {}
-    for p in PARAS[1:]:
-        fields[p] = data[p]
+    for p in (list(PARAS[1:]) + ['event', 'caseid']):
+        fields[p] = request.args.get(p)
     if all(not v for v in fields.values()):
-        message, error = MESSAGE_ADV_EMPTY, True
+        return render_template(page, password=PWD, warning=MESSAGE['ADV_EMPTY'], **DROP_DOWNS)
 
-    fields['event'] = data['Event']
-    fields['caseid'] = data['CaseID']
-
-    if not fields['event']:
-        message, error = MESSAGE_EVENT_NULL, True
-    else:
-        try:
-            match = search_event(fields['event'])
-            if not match:
-                message, error = f"Event Number {fields['event']} not in Database, no entries updated.", True
-        except ValueError:
-            message, error = MESSAGE_EVENT, True
-
-    if not error:
-        status = update_event(**fields)
-        if status == 200:
-            message = f"Case with Event Number {fields['event']} updated."
-        elif status == "DTERROR":
-            message, error = MESSAGE_DT, True
-        elif status == "DTCONFLICT":
-            message, error = MESSAGE_DT_CONFLICT, True
-        elif status == "IDERROR":
-            message, error = MESSAGE_CASEID, True
-        elif status == "IDCONFLICT":
-            message, error = MESSAGE_CASEID_CONFLICT, True
-        else:
-            message, error = "Unexpected Error.", True
-
-    if error:
-        return render_template('reportacrime.html', password='PLEASE', warning=message, **DROP_DOWNS)
-    else:
+    result, status = update_event(**fields)
+    if status == 200:
+        message = MESSAGE[result] % (fields['event'], "updated")
         return render_template('crimes_updated.html', message=message)
+    else:
+        if result == "NOMATCH":
+            message = MESSAGE[result] % (fields['event'], "updated")
+        else:
+            message = MESSAGE.get(result, "Unexpected Error.")
+        return render_template(page, password=PWD, warning=message, **DROP_DOWNS)
 
 
 if __name__ == "__main__":

@@ -43,7 +43,12 @@ MESSAGE = {'IDERROR': 'Incorrect input format - Case ID must be a seven-digit nu
            'ADV_EMPTY': 'Please fill in at least one field.',
            'DTERROR': 'Incorrect date format or invalid date.',
            'DTCONFLICT': 'Date From must be earlier than Date To.',
-           'WARNING': 'Incorrect input format - please adjust'}
+           'WARNING': 'Incorrect input format - please adjust',
+           'CONNECTIONERROR': "Connection error - Please contact admins.",
+           'NOMATCH': 'Event Number %s not in Database, no entries %s.',
+           'SUCCESS': "Case with Event Number %s %s."}
+
+PWD = 'PLEASE'
 
 
 @app.route("/")
@@ -54,7 +59,9 @@ def landing_site():
 @app.route("/crime/<id>")
 def show_crime_data(id):
     """calls a function from database.py that lists all crimes matching the unique event number"""
-    crime_info = search_event(id)
+    crime_info, status = search_event(id)
+    if status != 200:
+        crime_info = MESSAGE[crime_info]
     return jsonify(crime_info)
 
 
@@ -65,28 +72,27 @@ def search_index():
 
 @app.route('/results')
 def results_index():
+    page = 'search.html'
     caseid = request.args.get('caseid')
     event = request.args.get('event')
 
     if caseid is not None:
-        crime_match = search_case_id(caseid)
-        if isinstance(crime_match, str):
-            return render_template('search.html', results='', warning=MESSAGE[crime_match], **DROP_DOWNS)
+        result, status = search_case_id(caseid)
     elif event is not None:
-        crime_match = search_event(event)
-        if isinstance(crime_match, str):
-            return render_template('search.html', results='', warning=MESSAGE[crime_match], **DROP_DOWNS)
+        result, status = search_event(event)
     else:
         search_filters = {}
         for p in PARAS:
             search_filters[p] = request.args.get(p)
         if all(not v for v in search_filters.values()):
-            return render_template('search.html', results='', warning=MESSAGE['ADV_EMPTY'], **DROP_DOWNS)
-        crime_match = search(**search_filters)
-        if isinstance(crime_match, str):
-            return render_template('search.html', results='', warning=MESSAGE[crime_match], **DROP_DOWNS)
-    number_found = len(crime_match)
-    return render_template('search.html', results=crime_match, number_found=number_found, **DROP_DOWNS)
+            return render_template(page, results='', warning=MESSAGE['ADV_EMPTY'], **DROP_DOWNS)
+        result, status = search(**search_filters)
+
+    if status != 200:
+        message = MESSAGE.get(result, "Unexpected Error.")
+        return render_template(page, results='', warning=message, **DROP_DOWNS)
+    number_found = len(result)
+    return render_template(page, results=result, number_found=number_found, **DROP_DOWNS)
 
 
 @app.route("/reportacrime")
@@ -97,8 +103,7 @@ def crime_report_page():
 @app.route('/reportacrimeadmin')
 def crime_report_page_admin():
     input_password = request.args.get('password')
-    print(input_password)
-    if input_password == 'PLEASE':
+    if input_password == PWD:
         return render_template('reportacrime.html', password=input_password, **DROP_DOWNS)
     else:
         return render_template('magicword.html')
@@ -106,70 +111,60 @@ def crime_report_page_admin():
 
 @app.route("/crime/inputs/<id>")  # uploads data from site to proper database
 def report_a_crime(id):
+    page = 'reportacrime.html'
     fields = {}
     for p in PARAS[1:]:
         fields[p] = request.args.get(p)
     if all(not v for v in fields.values()):
-        return render_template('reportacrime.html', password='PLEASE', warning=MESSAGE['ADV_EMPTY'], **DROP_DOWNS)
+        return render_template(page, password=PWD, warning=MESSAGE['ADV_EMPTY'], **DROP_DOWNS)
     fields['caseid'] = request.args.get('decision')
-    status = report_case(**fields)
 
-    if status in MESSAGE:
-        return render_template('reportacrime.html', password='PLEASE', warning=MESSAGE[status], **DROP_DOWNS)
-    elif isinstance(status, int):
-        message = f"Connection Issue. Status code {status}."
-        return render_template('reportacrime.html', password='PLEASE', warning=message, **DROP_DOWNS)
+    result, status = report_case(**fields)
+    if status == 200:
+        return render_template('crimes_submitted.html', eventid=result)
     else:
-        return render_template('crimes_submitted.html', eventid=status)
+        message = MESSAGE.get(result, "Unexpected Error.")
+        return render_template(page, password=PWD, warning=message, **DROP_DOWNS)
 
 
 @app.route("/deletecase")
 def delete_a_case():
+    page = 'reportacrime.html'
     event = request.args.get('Event')
     if not event:
-        return render_template('reportacrime.html', password='PLEASE', warning=MESSAGE['EVENT_NULL'], **DROP_DOWNS)
+        return render_template(page, password=PWD, warning=MESSAGE['EVENT_NULL'], **DROP_DOWNS)
 
-    match = search_event(event)
-    if isinstance(match, str):
-        return render_template('reportacrime.html', password='PLEASE', warning=MESSAGE[match], **DROP_DOWNS)
-
-    if match:
-        status = delete_case(event)
-        if status == 200:
-            message = f'Case with Event Number {event} deleted.'
-            return render_template('crimes_deleted.html', message=message)
-        else:
-            message = f"Connection Issue. Status code {status}."
-            return render_template('reportacrime.html', password='PLEASE', warning=message, **DROP_DOWNS)
+    result, status = delete_case(event)
+    if status == 200:
+        message = MESSAGE[result] % (event, "deleted")
+        return render_template('crimes_updated.html', message=message)
     else:
-        message = f'Event Number {event} not in Database, no entries removed.'
-        return render_template('reportacrime.html', password='PLEASE', warning=message, **DROP_DOWNS)
+        if result == "NOMATCH":
+            message = MESSAGE[result] % (event, "deleted")
+        else:
+            message = MESSAGE.get(result, "Unexpected Error.")
+        return render_template(page, password=PWD, warning=message, **DROP_DOWNS)
 
 
 @app.route("/updateevent")
 def update_event_info():
+    page = 'reportacrime.html'
     fields = {}
     for p in (list(PARAS[1:]) + ['event', 'caseid']):
         fields[p] = request.args.get(p)
     if all(not v for v in fields.values()):
-        return render_template('reportacrime.html', password='PLEASE', warning=MESSAGE['ADV_EMPTY'], **DROP_DOWNS)
+        return render_template(page, password=PWD, warning=MESSAGE['ADV_EMPTY'], **DROP_DOWNS)
 
-    match = search_event(fields['event'])
-    if isinstance(match, str):
-        return render_template('reportacrime.html', password='PLEASE', warning=MESSAGE[match], **DROP_DOWNS)
-    if not match:
-        message = f"Event Number {fields['event']} not in Database, no entries updated."
-        return render_template('reportacrime.html', password='PLEASE', warning=message, **DROP_DOWNS)
-
-    status = update_event(**fields)
+    result, status = update_event(**fields)
     if status == 200:
-        message = f"Case with Event Number {fields['event']} updated."
+        message = MESSAGE[result] % (fields['event'], "updated")
         return render_template('crimes_updated.html', message=message)
-    elif status in MESSAGE:
-        return render_template('reportacrime.html', password='PLEASE', warning=MESSAGE[status], **DROP_DOWNS)
     else:
-        message = f"Unexpected Error. {status}"
-        return render_template('reportacrime.html', password='PLEASE', warning=message, **DROP_DOWNS)
+        if result == "NOMATCH":
+            message = MESSAGE[result] % (fields['event'], "updated")
+        else:
+            message = MESSAGE.get(result, "Unexpected Error.")
+        return render_template(page, password=PWD, warning=message, **DROP_DOWNS)
 
 
 if __name__ == "__main__":

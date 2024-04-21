@@ -157,11 +157,14 @@ def search(start_dt=None, end_dt=None, date_rep=None, off_cat=None, off_des=None
     if start_dt:
         try:
             start_dt = pd.to_datetime(start_dt, format=DATE_FORMAT)
+            start_dt = start_dt.strftime(DATE_FORMAT)
         except ValueError:
             return "DTERROR", ERROR_CODE
     if end_dt:
         try:
             end_dt = pd.to_datetime(end_dt, format=DATE_FORMAT)
+            end_dt = end_dt + pd.Timedelta(days=1)
+            end_dt = end_dt.strftime(DATE_FORMAT)
         except ValueError:
             return "DTERROR", ERROR_CODE
     if date_rep:
@@ -173,11 +176,8 @@ def search(start_dt=None, end_dt=None, date_rep=None, off_cat=None, off_des=None
         except ValueError:
             return "DTERROR", ERROR_CODE
     if start_dt and end_dt:
-        if start_dt > end_dt:
+        if start_dt >= end_dt:
             return "DTCONFLICT", ERROR_CODE
-    start_dt = start_dt.strftime(DATE_FORMAT)
-    end_dt = end_dt + pd.Timedelta(days=1)
-    end_dt = end_dt.strftime(DATE_FORMAT)
     # Pick one filter and download data
     map1 = {'Disposition': disp, 'Final_Incident_Category': fi_cat,
             'Initial_Incident_Category': ii_cat, 'Location_Type': loc_type, 'Offense_Category': off_cat}

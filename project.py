@@ -8,6 +8,7 @@ from database import search
 from database import report_case
 from database import delete_case
 from database import update_event
+from database import SUCCESS
 
 
 app = Flask(__name__)
@@ -60,7 +61,7 @@ def landing_site():
 def show_crime_data(id):
     """calls a function from database.py that lists all crimes matching the unique event number"""
     crime_info, status = search_event(id)
-    if status != 200:
+    if status != SUCCESS:
         crime_info = MESSAGE[crime_info]
     return jsonify(crime_info)
 
@@ -81,14 +82,12 @@ def results_index():
     elif event is not None:
         result, status = search_event(event)
     else:
-        search_filters = {}
-        for p in PARAS:
-            search_filters[p] = request.args.get(p)
+        search_filters = {p: request.args.get(p) for p in PARAS}
         if all(not v for v in search_filters.values()):
             return render_template(page, results='', warning=MESSAGE['ADV_EMPTY'], **DROP_DOWNS)
         result, status = search(**search_filters)
 
-    if status != 200:
+    if status != SUCCESS:
         message = MESSAGE.get(result, "Unexpected Error.")
         return render_template(page, results='', warning=message, **DROP_DOWNS)
     number_found = len(result)
@@ -112,15 +111,13 @@ def crime_report_page_admin():
 @app.route("/crime/inputs/<id>")  # uploads data from site to proper database
 def report_a_crime(id):
     page = 'reportacrime.html'
-    fields = {}
-    for p in PARAS[1:]:
-        fields[p] = request.args.get(p)
+    fields = {p: request.args.get(p) for p in PARAS[1:]}
     if all(not v for v in fields.values()):
         return render_template(page, password=PWD, warning=MESSAGE['ADV_EMPTY'], **DROP_DOWNS)
     fields['caseid'] = request.args.get('decision')
 
     result, status = report_case(**fields)
-    if status == 200:
+    if status == SUCCESS:
         return render_template('crimes_submitted.html', eventid=result)
     else:
         message = MESSAGE.get(result, "Unexpected Error.")
@@ -135,7 +132,7 @@ def delete_a_case():
         return render_template(page, password=PWD, warning=MESSAGE['EVENT_NULL'], **DROP_DOWNS)
 
     result, status = delete_case(event)
-    if status == 200:
+    if status == SUCCESS:
         message = MESSAGE[result] % (event, "deleted")
         return render_template('crimes_updated.html', message=message)
     else:
@@ -149,14 +146,12 @@ def delete_a_case():
 @app.route("/updateevent")
 def update_event_info():
     page = 'reportacrime.html'
-    fields = {}
-    for p in (list(PARAS[1:]) + ['event', 'caseid']):
-        fields[p] = request.args.get(p)
+    fields = {p: request.args.get(p) for p in (list(PARAS[1:]) + ['event', 'caseid'])}
     if all(not v for v in fields.values()):
         return render_template(page, password=PWD, warning=MESSAGE['ADV_EMPTY'], **DROP_DOWNS)
 
     result, status = update_event(**fields)
-    if status == 200:
+    if status == SUCCESS:
         message = MESSAGE[result] % (fields['event'], "updated")
         return render_template('crimes_updated.html', message=message)
     else:

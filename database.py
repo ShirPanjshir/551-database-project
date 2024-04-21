@@ -104,7 +104,7 @@ def report_case(caseid=False, start_dt=None, end_dt=None, off_cat=None, off_des=
 
     if caseid == "yes":   # caseid, if selected, can put into either db now
         result, status = ez_download({'orderBy': '"CaseID"', 'limitToLast': '1'})
-        if status != 200:
+        if status != SUCCESS:
             return result, status
         latest = max([int(v['CaseID']) for v in result.values()])
         data['CaseID'] = str(latest + 1)
@@ -198,7 +198,7 @@ def search(start_dt=None, end_dt=None, date_rep=None, off_cat=None, off_des=None
     else:
         result, status = ez_download()
 
-    if status != 200:
+    if status != SUCCESS:
         return result, status
 
     df = pd.DataFrame.from_dict(result, orient='index').sort_index()
@@ -251,7 +251,7 @@ def search_event(event):
 def delete_case(event):
     """Main function to DELETE content from the database"""
     result, status = search_event(event)
-    if status != 200:
+    if status != SUCCESS:
         return result, status
     url = DB_URLS[hash_func(event)]
     if not result:
@@ -275,7 +275,7 @@ def update_event(event, caseid=None, start_dt=None, end_dt=None, disp=None, fi_c
     data = {k: v for k, v in data.items() if v}   # filter out Nones and empty strings
 
     result, status = search_event(event)
-    if status != 200:
+    if status != SUCCESS:
         return result, status
     if not result:
         return "NOMATCH", ERROR_CODE
@@ -285,7 +285,7 @@ def update_event(event, caseid=None, start_dt=None, end_dt=None, disp=None, fi_c
 
     if caseid:
         result, status = search_case_id(caseid)
-        if status != 200:
+        if status != SUCCESS:
             return result, ERROR_CODE
         if result:
             return "IDCONFLICT", ERROR_CODE

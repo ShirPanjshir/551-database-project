@@ -6,7 +6,9 @@ http://3.216.130.143
 
 Or Clone Repository and run **project.py**
 >database.py contains functions to support project.py
+>
 >templates directory contains html files
+>
 >static directory contains images
 
 This database was built with Python Flask, HTML, and Google Firebase.

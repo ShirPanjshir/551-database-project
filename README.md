@@ -2,7 +2,12 @@
 USC DSCI 551 Semester Project
 The BDK Distributed Database for USC Public Safety
 *hosted at the link below*
-http://3.216.130.143 
+http://3.216.130.143
+
+Or Clone Repository and run **project.py**
+>database.py contains functions to support project.py
+>templates directory contains html files
+>static directory contains images
 
 This database was built with Python Flask, HTML, and Google Firebase.
     
